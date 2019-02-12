@@ -1,11 +1,11 @@
-FROM devops.crc.com.cn/choerodon-tools/devops-base:0.7.1 as pyinstaller
+FROM registry.devops.crc.com.cn/choerodon-tools/devops-base:0.7.1 as pyinstaller
 WORKDIR /home/yaml
 COPY values_yaml.py requirements.txt  ./
 RUN pyinstaller --noconfirm --clean values_yaml.py
 #RUN ls -R /src/
 #RUN cat /src/warn*.txt
 
-FROM devops.crc.com.cn/choerodon-tools/javabase:0.7.1
+FROM registry.devops.crc.com.cn/choerodon-tools/javabase:0.7.1
 COPY --from=pyinstaller /home/yaml/dist/values_yaml /usr/lib/yaml
 COPY app.jar /devops-service.jar
 ENTRYPOINT exec java -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap $JAVA_OPTS $SKYWALKING_OPTS  -jar /devops-service.jar
