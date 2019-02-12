@@ -1,4 +1,4 @@
-image: registry.devops.crc.com.cn/choerodon-tools/cibase:0.6.0
+image: registry.devops.crc.com.cn/tools/cibase:0.6.0
 
 stages:
   - mvn-package
