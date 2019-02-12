@@ -66,6 +66,7 @@
         <powermock.version>1.7.4</powermock.version>
     </properties>
 
+
     <dependencies>
         <dependency>
             <groupId>io.choerodon</groupId>
