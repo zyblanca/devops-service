@@ -4,10 +4,15 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import io.choerodon.devops.domain.application.event.DevOpsAppImportPayload;
+import io.choerodon.devops.domain.application.entity.*;
+import io.choerodon.devops.domain.application.event.*;
+import io.choerodon.devops.domain.application.repository.*;
+import io.choerodon.devops.infra.common.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.choerodon.asgard.saga.SagaDefinition;
@@ -15,15 +20,6 @@ import io.choerodon.asgard.saga.annotation.SagaTask;
 import io.choerodon.devops.api.dto.PipelineWebHookDTO;
 import io.choerodon.devops.api.dto.PushWebHookDTO;
 import io.choerodon.devops.app.service.*;
-import io.choerodon.devops.domain.application.entity.ApplicationE;
-import io.choerodon.devops.domain.application.entity.ApplicationTemplateE;
-import io.choerodon.devops.domain.application.entity.DevopsEnvironmentE;
-import io.choerodon.devops.domain.application.event.DevOpsAppPayload;
-import io.choerodon.devops.domain.application.event.DevOpsUserPayload;
-import io.choerodon.devops.domain.application.event.GitlabProjectPayload;
-import io.choerodon.devops.domain.application.repository.ApplicationRepository;
-import io.choerodon.devops.domain.application.repository.ApplicationTemplateRepository;
-import io.choerodon.devops.domain.application.repository.DevopsEnvironmentRepository;
 import io.choerodon.devops.domain.service.UpdateUserPermissionService;
 import io.choerodon.devops.domain.service.impl.UpdateAppUserPermissionServiceImpl;
 
@@ -50,6 +46,16 @@ public class DevopsSagaHandler {
     private final ApplicationRepository applicationRepository;
     private final ApplicationTemplateRepository applicationTemplateRepository;
     private final DevopsEnvironmentRepository devopsEnvironmentRepository;
+
+    @Value("${services.gitlab.url}")
+    private String gitlabUrl;
+
+    @Autowired
+    private IamRepository iamRepository;
+
+    @Autowired
+    private UserAttrRepository userAttrRepository;
+
 
     @Autowired
     public DevopsSagaHandler(DevopsEnvironmentService devopsEnvironmentService,
@@ -142,7 +148,8 @@ public class DevopsSagaHandler {
             maxRetryCount = 3,
             seq = 1)
     public String createApp(String data) {
-        DevOpsAppPayload devOpsAppPayload = gson.fromJson(data, DevOpsAppPayload.class);
+        DevOpsAppPayload       devOpsAppPayload             = gson.fromJson(data, DevOpsAppPayload.class);
+        DevOpsAppPayloadDevKit devOpsAppPayloadDevKit       = gson.fromJson(data, DevOpsAppPayloadDevKit.class);
         if (devOpsAppPayload.getType().equals(APPLICATION)) {
             try {
                 applicationService.operationApplication(devOpsAppPayload);
@@ -157,7 +164,32 @@ public class DevopsSagaHandler {
                     LOGGER.error("update application set create success status error");
                 }
             }
+
+            //===== 对接DevKit,创建新应用通知到DevKit =====
+            BeanUtils.copyProperties(devOpsAppPayload, devOpsAppPayloadDevKit);
+            // 新应用名称
+            devOpsAppPayloadDevKit.setItemName(applicationE.getName());
+
+            // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
+            String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
+            LOGGER.error("=============== Begin =================");
+            ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
+            LOGGER.error("项目编码:" + projectE.getCode());
+            LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+            devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + projectE.getOrganization().getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+
+            // 新应用用户名称
+            UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppPayload.getUserId()));
+            LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
+            devOpsAppPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
+
+            LOGGER.error("=============== End =================");
         }
+
+
+        data = gson.toJson(devOpsAppPayloadDevKit);
+        LOGGER.error("data:" + data);
+        //===== 对接DevKit,创建新应用通知到DevKit =====
         return data;
     }
 

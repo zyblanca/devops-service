@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
-import io.choerodon.devops.domain.application.event.DevOpsAppImportPayload;
+import io.choerodon.devops.domain.application.event.*;
 import io.choerodon.devops.infra.common.util.enums.GitPlatformType;
 import org.eclipse.jgit.api.Git;
 import org.slf4j.Logger;
@@ -37,8 +37,6 @@ import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
 import io.choerodon.devops.domain.application.entity.gitlab.GitlabMemberE;
 import io.choerodon.devops.domain.application.entity.gitlab.GitlabUserE;
 import io.choerodon.devops.domain.application.entity.iam.UserE;
-import io.choerodon.devops.domain.application.event.DevOpsAppPayload;
-import io.choerodon.devops.domain.application.event.DevOpsUserPayload;
 import io.choerodon.devops.domain.application.factory.ApplicationFactory;
 import io.choerodon.devops.domain.application.repository.*;
 import io.choerodon.devops.domain.application.valueobject.Organization;
@@ -150,12 +148,63 @@ public class ApplicationServiceImpl implements ApplicationService {
             userIds.forEach(e -> appUserPermissionRepository.create(e, appId));
         }
 
-        String input = gson.toJson(devOpsAppPayload);
+        String input = gson.toJson(devOpsAppPayloadDevKitInput(devOpsAppPayload, applicationE, null));
         sagaClient.startSaga("devops-create-gitlab-project", new StartInstanceDTO(input, "", "", ResourceLevel.PROJECT.value(), projectId));
 
         return ConvertHelper.convert(applicationRepository.queryByCode(applicationE.getCode(),
                 applicationE.getProjectE().getId()), ApplicationRepDTO.class);
     }
+
+
+    private DevOpsAppPayloadDevKit devOpsAppPayloadDevKitInput(DevOpsAppPayload devOpsAppPayload, ApplicationE applicationE, Boolean active){
+        DevOpsAppPayloadDevKit devOpsAppPayloadDevKit = new DevOpsAppPayloadDevKit();
+        BeanUtils.copyProperties(devOpsAppPayload, devOpsAppPayloadDevKit);
+        // 新应用名称
+        devOpsAppPayloadDevKit.setItemName(applicationE.getName());
+
+        // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
+        String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
+        LOGGER.error("=============== Begin =================");
+        ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
+        LOGGER.error("项目编码:" + projectE.getCode());
+        LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+        devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + projectE.getOrganization().getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+
+        // 新应用用户名称
+        UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(GitUserNameUtil.getUserId()));
+        LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
+        devOpsAppPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
+
+        if(null != active) {
+            // 应用的状态
+            LOGGER.error("更新状态:" + active);
+            devOpsAppPayloadDevKit.setStatus(active);
+        }
+        return devOpsAppPayloadDevKit;
+    }
+
+    private DevOpsUserPayloadDevKit devOpsUserPayloadDevKitInput(DevOpsUserPayload devOpsUserPayload, ApplicationE applicationE){
+        DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = new DevOpsUserPayloadDevKit();
+        BeanUtils.copyProperties(devOpsUserPayload, devOpsUserPayloadDevKit);
+        // 新应用名称
+        devOpsUserPayloadDevKit.setItemName(applicationE.getName());
+
+        // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
+        String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
+        LOGGER.error("=============== Begin =================");
+        ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
+        LOGGER.error("项目编码:" + projectE.getCode());
+        LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+        devOpsUserPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + projectE.getOrganization().getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+
+        // 新应用用户名称
+        UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(GitUserNameUtil.getUserId()));
+        LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
+        devOpsUserPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
+        return devOpsUserPayloadDevKit;
+    }
+
+
 
     @Override
     public ApplicationRepDTO query(Long projectId, Long applicationId) {
@@ -204,31 +253,33 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         // 创建gitlabUserPayload
-        DevOpsUserPayload devOpsAppPayload = new DevOpsUserPayload();
-        devOpsAppPayload.setIamProjectId(projectId);
-        devOpsAppPayload.setAppId(appId);
-        devOpsAppPayload.setGitlabProjectId(oldApplicationE.getGitlabProjectE().getId());
-        devOpsAppPayload.setIamUserIds(applicationUpdateDTO.getUserIds());
+        DevOpsUserPayload devOpsUserPayload = new DevOpsUserPayload();
+        devOpsUserPayload.setIamProjectId(projectId);
+        devOpsUserPayload.setAppId(appId);
+        devOpsUserPayload.setGitlabProjectId(oldApplicationE.getGitlabProjectE().getId());
+        devOpsUserPayload.setIamUserIds(applicationUpdateDTO.getUserIds());
 
         if (oldApplicationE.getIsSkipCheckPermission() && applicationUpdateDTO.getIsSkipCheckPermission()) {
             return true;
         } else if (oldApplicationE.getIsSkipCheckPermission() && !applicationUpdateDTO.getIsSkipCheckPermission()) {
             applicationUpdateDTO.getUserIds().forEach(e -> appUserPermissionRepository.create(e, appId));
-            devOpsAppPayload.setOption(1);
+            devOpsUserPayload.setOption(1);
         } else if (!oldApplicationE.getIsSkipCheckPermission() && applicationUpdateDTO.getIsSkipCheckPermission()) {
             appUserPermissionRepository.deleteByAppId(appId);
-            devOpsAppPayload.setOption(2);
+            devOpsUserPayload.setOption(2);
         } else {
             appUserPermissionRepository.deleteByAppId(appId);
             applicationUpdateDTO.getUserIds().forEach(e -> appUserPermissionRepository.create(e, appId));
-            devOpsAppPayload.setOption(3);
+            devOpsUserPayload.setOption(3);
         }
-        String input = gson.toJson(devOpsAppPayload);
+        String input = gson.toJson(devOpsUserPayloadDevKitInput(devOpsUserPayload, applicationE));
         sagaClient.startSaga("devops-update-gitlab-users", new StartInstanceDTO(input, "app", appId.toString(), ResourceLevel.PROJECT.value(), projectId));
 
         return true;
     }
 
+    @Saga(code = "devops-update-application-status",
+            description = "Devops更新应用状态", inputSchema = "{}")
     @Override
     public Boolean active(Long applicationId, Boolean active) {
         if (!active) {
@@ -239,6 +290,12 @@ public class ApplicationServiceImpl implements ApplicationService {
         if (applicationRepository.update(applicationE) != 1) {
             throw new CommonException("error.application.active");
         }
+
+        //===== 对接DevKit,更新应用通知到DevKit =====
+        DevOpsAppPayloadDevKit devOpsAppPayloadDevKit = devOpsAppPayloadDevKitInput(new DevOpsAppPayload(), applicationE, active);
+        String input = gson.toJson(devOpsAppPayloadDevKit);
+        sagaClient.startSaga("devops-update-application-status", new StartInstanceDTO(input, "app", applicationE.getId().toString(), ResourceLevel.PROJECT.value(), devOpsAppPayloadDevKit.getIamProjectId()));
+
         return true;
     }
 
