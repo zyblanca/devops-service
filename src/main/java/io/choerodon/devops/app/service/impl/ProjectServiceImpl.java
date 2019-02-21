@@ -1,5 +1,6 @@
 package io.choerodon.devops.app.service.impl;
 
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -34,5 +35,10 @@ public class ProjectServiceImpl implements ProjectService {
         // create project in db
         DevopsProjectDO devopsProject = new DevopsProjectDO(projectEvent.getProjectId());
         devopsProjectRepository.createProject(devopsProject);
+    }
+
+    @Override
+    public GitlabGroupE queryDevopsProject(Long projectId) {
+        return devopsProjectRepository.queryDevopsProject(projectId);
     }
 }

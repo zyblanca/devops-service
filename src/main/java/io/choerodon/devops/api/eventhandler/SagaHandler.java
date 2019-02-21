@@ -1,9 +1,15 @@
 package io.choerodon.devops.api.eventhandler;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.choerodon.asgard.saga.SagaDefinition;
+import io.choerodon.devops.domain.application.entity.UserAttrE;
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
+import io.choerodon.devops.domain.application.event.*;
+import io.choerodon.devops.domain.application.repository.UserAttrRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -16,10 +22,6 @@ import io.choerodon.devops.api.dto.GitlabUserDTO;
 import io.choerodon.devops.api.dto.GitlabUserRequestDTO;
 import io.choerodon.devops.api.dto.RegisterOrganizationDTO;
 import io.choerodon.devops.app.service.*;
-import io.choerodon.devops.domain.application.event.GitlabGroupPayload;
-import io.choerodon.devops.domain.application.event.HarborPayload;
-import io.choerodon.devops.domain.application.event.OrganizationEventPayload;
-import io.choerodon.devops.domain.application.event.ProjectEvent;
 import io.choerodon.devops.infra.common.util.TypeUtil;
 
 /**
@@ -39,6 +41,12 @@ public class SagaHandler {
     private final OrganizationService organizationService;
     private final GitlabGroupMemberService gitlabGroupMemberService;
     private final GitlabUserService gitlabUserService;
+
+    @Autowired
+    private ProjectService projectService;
+
+    @Autowired
+    private UserAttrRepository userAttrRepository;
 
     @Autowired
     public SagaHandler(ProjectService projectService, GitlabGroupService gitlabGroupService,
@@ -99,6 +107,10 @@ public class SagaHandler {
         BeanUtils.copyProperties(projectEvent, gitlabGroupPayload);
         loggerInfo(gitlabGroupPayload);
         gitlabGroupService.updateGroup(gitlabGroupPayload, "");
+
+        // 对接DevKit, 传递项目的GitlabGroupId值
+        msg = gitlabGroupIdPayload(projectEvent);
+
         return msg;
     }
 
@@ -115,6 +127,38 @@ public class SagaHandler {
         gitlabGroupService.updateGroup(gitlabGroupPayload, "-gitops");
         return msg;
     }
+
+    /**
+     * 项目修改测试代码
+     */
+    @SagaTask(code = "wikiProjectUpdate",
+            description = "项目修改名称同步",
+            sagaCode = "iam-update-project",
+            maxRetryCount = 3,
+            concurrentLimitNum = 2,
+            concurrentLimitPolicy = SagaDefinition.ConcurrentLimitPolicy.NONE,
+            seq = 10)
+    public void dealProjectUpdateSync(String data) throws IOException {
+        LOGGER.error("项目修改:" + data);
+    }
+
+    /**
+     * 封装GitLabGroupId到参数中
+     * @param projectEvent
+     * @return
+     */
+    private String gitlabGroupIdPayload(ProjectEvent  projectEvent) {
+        GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(projectEvent.getProjectId());
+        ProjectEventDevKit projectEventDevKit = new ProjectEventDevKit();
+        BeanUtils.copyProperties(projectEvent, projectEventDevKit);
+        projectEventDevKit.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
+
+        UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(projectEvent.getUserId()));
+        projectEventDevKit.setUserLogin(userAttrE.getGitlabUserName());
+
+        return gson.toJson(projectEventDevKit);
+    }
+
 
     /**
      * 创建harbor项目事件

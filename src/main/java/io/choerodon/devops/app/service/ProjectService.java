@@ -1,5 +1,6 @@
 package io.choerodon.devops.app.service;
 
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
 import io.choerodon.devops.domain.application.event.ProjectEvent;
 
 /**
@@ -17,5 +18,12 @@ public interface ProjectService {
      * @param projectEvent 项目创建事件
      */
     void createProject(ProjectEvent projectEvent);
+
+    /**
+     * 根据ProjectId查询GitlabGroup
+     * @param projectId
+     * @return
+     */
+    GitlabGroupE queryDevopsProject(Long projectId);
 
 }
