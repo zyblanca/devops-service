@@ -128,20 +128,41 @@ public class SagaHandler {
         return msg;
     }
 
+
     /**
-     * 项目修改测试代码
+     * DevKit服务的项目启用监听
      */
-    @SagaTask(code = "testProjectUpdate",
-            description = "项目修改名称同步",
-            sagaCode = "iam-update-project",
+    @SagaTask(code = "devKitEnableOrganization",
+            description = "DevKit服务的项目启用监听",
+            sagaCode = "iam-enable-project",
             maxRetryCount = 3,
             concurrentLimitNum = 2,
             concurrentLimitPolicy = SagaDefinition.ConcurrentLimitPolicy.NONE,
             seq = 10)
-    public void dealProjectUpdateSync(String data) throws IOException {
-        LOGGER.error("项目修改:" + data);
+    public String handleProjectEnableEvent(String data) {
         ProjectEvent projectEvent = gson.fromJson(data, ProjectEvent.class);
-        LOGGER.error(projectEvent.toString());
+        // 对接DevKit, 传递项目的GitlabGroupId值
+        data = gitlabGroupIdPayload(projectEvent);
+        LOGGER.error("DevKit服务的项目禁用监听:" + data);
+        return data;
+    }
+
+    /**
+     * DevKit服务的项目禁用监听
+     */
+    @SagaTask(code = "devKitDisableProject",
+            description = "DevKit服务的项目禁用监听",
+            sagaCode = "iam-disable-project",
+            maxRetryCount = 3,
+            concurrentLimitNum = 2,
+            concurrentLimitPolicy = SagaDefinition.ConcurrentLimitPolicy.NONE,
+            seq = 10)
+    public String handleProjectDisableEvent(String data) {
+        ProjectEvent projectEvent = gson.fromJson(data, ProjectEvent.class);
+        // 对接DevKit, 传递项目的GitlabGroupId值
+        data = gitlabGroupIdPayload(projectEvent);
+        LOGGER.error("DevKit服务的项目禁用监听:" + data);
+        return data;
     }
 
     /**
