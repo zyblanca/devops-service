@@ -176,9 +176,10 @@ public class SagaHandler {
         BeanUtils.copyProperties(projectEvent, projectEventDevKit);
         projectEventDevKit.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
 
-        UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(projectEvent.getUserId()));
-        projectEventDevKit.setUserLogin(userAttrE.getGitlabUserName());
-
+        if(null != projectEvent.getUserId()){
+            UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(projectEvent.getUserId()));
+            projectEventDevKit.setUserLogin(userAttrE.getGitlabUserName());
+        }
         return gson.toJson(projectEventDevKit);
     }
 
