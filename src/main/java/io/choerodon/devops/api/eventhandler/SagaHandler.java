@@ -131,7 +131,7 @@ public class SagaHandler {
     /**
      * 项目修改测试代码
      */
-    @SagaTask(code = "wikiProjectUpdate",
+    @SagaTask(code = "testProjectUpdate",
             description = "项目修改名称同步",
             sagaCode = "iam-update-project",
             maxRetryCount = 3,
@@ -140,6 +140,8 @@ public class SagaHandler {
             seq = 10)
     public void dealProjectUpdateSync(String data) throws IOException {
         LOGGER.error("项目修改:" + data);
+        ProjectEvent projectEvent = gson.fromJson(data, ProjectEvent.class);
+        LOGGER.error(projectEvent.toString());
     }
 
     /**
