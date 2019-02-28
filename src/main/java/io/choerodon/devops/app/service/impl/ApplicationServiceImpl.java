@@ -429,7 +429,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
-    public void operationApplication(DevOpsAppPayload gitlabProjectPayload) {
+    public String operationApplication(DevOpsAppPayload gitlabProjectPayload) {
         GitlabGroupE gitlabGroupE = devopsProjectRepository.queryByGitlabGroupId(
                 TypeUtil.objToInteger(gitlabProjectPayload.getGroupId()));
         ApplicationE applicationE = applicationRepository.queryByCode(gitlabProjectPayload.getPath(),
@@ -512,6 +512,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         } catch (Exception e) {
             throw new CommonException(e.getMessage(), e);
         }
+        return applicationE.getToken();
     }
 
     /**

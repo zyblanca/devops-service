@@ -18,6 +18,12 @@ public class DevOpsAppPayloadDevKit extends DevOpsAppPayload {
      * 用户名称
      */
     private String userLogin;
+
+    /**
+     * GitLabToken
+     */
+    private String token;
+
     /**
      * 状态,1:启用 0:禁用
      */
@@ -45,6 +51,14 @@ public class DevOpsAppPayloadDevKit extends DevOpsAppPayload {
 
     public void setUserLogin(String userLogin) {
         this.userLogin = userLogin;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public Boolean getStatus() {

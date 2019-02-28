@@ -83,7 +83,7 @@ public interface ApplicationService {
      *
      * @param gitlabProjectEventDTO 应用信息
      */
-    void operationApplication(DevOpsAppPayload gitlabProjectEventDTO);
+    String operationApplication(DevOpsAppPayload gitlabProjectEventDTO);
 
     /**
      * 处理应用导入逻辑

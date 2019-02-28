@@ -150,9 +150,10 @@ public class DevopsSagaHandler {
     public String createApp(String data) {
         DevOpsAppPayload       devOpsAppPayload             = gson.fromJson(data, DevOpsAppPayload.class);
         DevOpsAppPayloadDevKit devOpsAppPayloadDevKit       = gson.fromJson(data, DevOpsAppPayloadDevKit.class);
+        String token;
         if (devOpsAppPayload.getType().equals(APPLICATION)) {
             try {
-                applicationService.operationApplication(devOpsAppPayload);
+                token = applicationService.operationApplication(devOpsAppPayload);
             } catch (Exception e) {
                 applicationService.setAppErrStatus(data, devOpsAppPayload.getIamProjectId());
                 throw e;
@@ -182,6 +183,9 @@ public class DevopsSagaHandler {
             UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppPayload.getUserId()));
             LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
             devOpsAppPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
+
+            // Gitlab的Token
+            devOpsAppPayloadDevKit.setToken(token);
 
             LOGGER.error("=============== End =================");
         }
