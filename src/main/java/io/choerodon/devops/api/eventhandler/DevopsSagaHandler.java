@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import io.choerodon.devops.domain.application.entity.*;
 import io.choerodon.devops.domain.application.event.*;
 import io.choerodon.devops.domain.application.repository.*;
+import io.choerodon.devops.domain.application.valueobject.Organization;
 import io.choerodon.devops.infra.common.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,8 +177,9 @@ public class DevopsSagaHandler {
             LOGGER.error("=============== Begin =================");
             ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
             LOGGER.error("项目编码:" + projectE.getCode());
+            Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
             LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
-            devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + projectE.getOrganization().getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+            devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
 
             // 新应用用户名称
             UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppPayload.getUserId()));
@@ -185,7 +187,7 @@ public class DevopsSagaHandler {
             devOpsAppPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
 
             // Gitlab的Token
-            devOpsAppPayloadDevKit.setToken(token);
+            devOpsAppPayloadDevKit.setToken(applicationE.getToken());
 
             LOGGER.error("=============== End =================");
         }
