@@ -1,11 +1,13 @@
 package io.choerodon.devops.api.eventhandler;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.choerodon.asgard.saga.SagaDefinition;
+import io.choerodon.devops.api.dto.*;
 import io.choerodon.devops.domain.application.entity.UserAttrE;
 import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
 import io.choerodon.devops.domain.application.event.*;
@@ -17,10 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.choerodon.asgard.saga.annotation.SagaTask;
-import io.choerodon.devops.api.dto.GitlabGroupMemberDTO;
-import io.choerodon.devops.api.dto.GitlabUserDTO;
-import io.choerodon.devops.api.dto.GitlabUserRequestDTO;
-import io.choerodon.devops.api.dto.RegisterOrganizationDTO;
 import io.choerodon.devops.app.service.*;
 import io.choerodon.devops.infra.common.util.TypeUtil;
 
@@ -224,13 +222,26 @@ public class SagaHandler {
     @SagaTask(code = "devopsUpdateMemberRole", description = "角色同步事件",
             sagaCode = "iam-update-memberRole", maxRetryCount = 3,
             seq = 1)
-    public List<GitlabGroupMemberDTO> handleGitlabGroupMemberEvent(String payload) {
+    public List<GitlabGroupMemberDevKitDTO> handleGitlabGroupMemberEvent(String payload) {
         List<GitlabGroupMemberDTO> gitlabGroupMemberDTOList = gson.fromJson(payload,
                 new TypeToken<List<GitlabGroupMemberDTO>>() {
                 }.getType());
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.createGitlabGroupMemberRole(gitlabGroupMemberDTOList);
-        return gitlabGroupMemberDTOList;
+
+        // 对接DevKit
+        List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
+        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
+        for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            if("project".equals(gitlabGroupMemberDTO.getResourceType())){
+                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
+                GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
+                gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
+                gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
+            }
+        }
+
+        return gitlabGroupMemberDevKitDTOList;
     }
 
     /**
