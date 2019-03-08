@@ -248,8 +248,8 @@ public class DevopsSagaHandler {
 
         // Gitlab的Token
         devOpsAppImportPayloadDevKit.setToken(applicationE.getToken());
-
-
+        data = gson.toJson(devOpsAppImportPayloadDevKit);
+        LOGGER.error("data:" + data);
 
         return data;
     }
