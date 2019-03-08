@@ -167,8 +167,14 @@ public class ApplicationServiceImpl implements ApplicationService {
         LOGGER.error("=============== Begin =================");
         ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
         LOGGER.error("项目编码:" + projectE.getCode());
-        LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
-        devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + projectE.getOrganization().getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+
+        Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+        LOGGER.error("组织编码:" + organization.getCode());
+
+        applicationE = applicationRepository.query(applicationE.getId());
+        LOGGER.error("应用编码:" + applicationE.getCode());
+
+        devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
 
         // 新应用用户名称
         UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(GitUserNameUtil.getUserId()));
@@ -194,8 +200,14 @@ public class ApplicationServiceImpl implements ApplicationService {
         LOGGER.error("=============== Begin =================");
         ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
         LOGGER.error("项目编码:" + projectE.getCode());
-        LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
-        devOpsUserPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + projectE.getOrganization().getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+
+        Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+        LOGGER.error("组织编码:" + organization.getCode());
+
+        applicationE = applicationRepository.query(applicationE.getId());
+        LOGGER.error("应用编码:" + applicationE.getCode());
+
+        devOpsUserPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
 
         // 新应用用户名称
         UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(GitUserNameUtil.getUserId()));
