@@ -250,13 +250,27 @@ public class SagaHandler {
     @SagaTask(code = "devopsDeleteMemberRole", description = "删除角色同步事件",
             sagaCode = "iam-delete-memberRole", maxRetryCount = 3,
             seq = 1)
-    public List<GitlabGroupMemberDTO> handleDeleteMemberRoleEvent(String payload) {
+    public List<GitlabGroupMemberDevKitDTO> handleDeleteMemberRoleEvent(String payload) {
         List<GitlabGroupMemberDTO> gitlabGroupMemberDTOList = gson.fromJson(payload,
                 new TypeToken<List<GitlabGroupMemberDTO>>() {
                 }.getType());
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.deleteGitlabGroupMemberRole(gitlabGroupMemberDTOList);
-        return gitlabGroupMemberDTOList;
+
+
+        // 对接DevKit
+        List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
+        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
+        for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            if("project".equals(gitlabGroupMemberDTO.getResourceType())){
+                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
+                GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
+                gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
+                gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
+            }
+        }
+
+        return gitlabGroupMemberDevKitDTOList;
     }
 
     /**
