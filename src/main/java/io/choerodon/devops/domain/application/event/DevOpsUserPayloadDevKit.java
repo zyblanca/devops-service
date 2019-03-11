@@ -14,6 +14,10 @@ public class DevOpsUserPayloadDevKit extends DevOpsUserPayload {
         this.itemName = itemName;
     }
 
+    public String getItemName() {
+        return itemName;
+    }
+
     public String getGitAddress() {
         return gitAddress;
     }

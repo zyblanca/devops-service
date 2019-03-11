@@ -272,7 +272,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         devOpsUserPayload.setIamUserIds(applicationUpdateDTO.getUserIds());
 
         if (oldApplicationE.getIsSkipCheckPermission() && applicationUpdateDTO.getIsSkipCheckPermission()) {
-            return true;
+            //return true; 不管是否修改权限和名称,都需要发送Saga详细给其他平台同步
         } else if (oldApplicationE.getIsSkipCheckPermission() && !applicationUpdateDTO.getIsSkipCheckPermission()) {
             applicationUpdateDTO.getUserIds().forEach(e -> appUserPermissionRepository.create(e, appId));
             devOpsUserPayload.setOption(1);
