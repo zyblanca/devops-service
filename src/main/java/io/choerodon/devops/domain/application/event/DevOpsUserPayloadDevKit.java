@@ -10,6 +10,8 @@ public class DevOpsUserPayloadDevKit extends DevOpsUserPayload {
     private String gitAddress;
     private String userLogin;
 
+    private Boolean onlyModifyApplication;
+
     public void setItemName(String itemName) {
         this.itemName = itemName;
     }
@@ -32,6 +34,14 @@ public class DevOpsUserPayloadDevKit extends DevOpsUserPayload {
 
     public void setUserLogin(String userLogin) {
         this.userLogin = userLogin;
+    }
+
+    public Boolean getOnlyModifyApplication() {
+        return onlyModifyApplication;
+    }
+
+    public void setOnlyModifyApplication(Boolean onlyModifyApplication) {
+        this.onlyModifyApplication = onlyModifyApplication;
     }
 }
 

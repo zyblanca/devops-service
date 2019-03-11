@@ -264,6 +264,13 @@ public class DevopsSagaHandler {
             seq = 1)
     public String updateGitlabUser(String data) {
         DevOpsUserPayload devOpsUserPayload = gson.fromJson(data, DevOpsUserPayload.class);
+
+        // 如果仅修改应用名称就不需要更新权限
+        DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = gson.fromJson(data, DevOpsUserPayloadDevKit.class);
+        if(devOpsUserPayloadDevKit.getOnlyModifyApplication()){
+            return data;
+        }
+
         try {
             UpdateUserPermissionService updateUserPermissionService = new UpdateAppUserPermissionServiceImpl();
             updateUserPermissionService

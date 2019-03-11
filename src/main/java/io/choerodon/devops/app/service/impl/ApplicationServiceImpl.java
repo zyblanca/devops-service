@@ -271,8 +271,10 @@ public class ApplicationServiceImpl implements ApplicationService {
         devOpsUserPayload.setGitlabProjectId(oldApplicationE.getGitlabProjectE().getId());
         devOpsUserPayload.setIamUserIds(applicationUpdateDTO.getUserIds());
 
+        Boolean onlyModifyApplication =false;
         if (oldApplicationE.getIsSkipCheckPermission() && applicationUpdateDTO.getIsSkipCheckPermission()) {
             //return true; 不管是否修改权限和名称,都需要发送Saga详细给其他平台同步
+            onlyModifyApplication = true;
         } else if (oldApplicationE.getIsSkipCheckPermission() && !applicationUpdateDTO.getIsSkipCheckPermission()) {
             applicationUpdateDTO.getUserIds().forEach(e -> appUserPermissionRepository.create(e, appId));
             devOpsUserPayload.setOption(1);
@@ -284,7 +286,9 @@ public class ApplicationServiceImpl implements ApplicationService {
             applicationUpdateDTO.getUserIds().forEach(e -> appUserPermissionRepository.create(e, appId));
             devOpsUserPayload.setOption(3);
         }
-        String input = gson.toJson(devOpsUserPayloadDevKitInput(devOpsUserPayload, applicationE));
+        DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = devOpsUserPayloadDevKitInput(devOpsUserPayload, applicationE);
+        devOpsUserPayloadDevKit.setOnlyModifyApplication(onlyModifyApplication);
+        String input = gson.toJson(devOpsUserPayloadDevKit);
         sagaClient.startSaga("devops-update-gitlab-users", new StartInstanceDTO(input, "app", appId.toString(), ResourceLevel.PROJECT.value(), projectId));
 
         return true;
