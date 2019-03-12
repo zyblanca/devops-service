@@ -20,6 +20,11 @@ public class DevOpsAppPayloadDevKit extends DevOpsAppPayload {
     private String userLogin;
 
     /**
+     * 组织编码
+     */
+    private String organizationCode;
+
+    /**
      * GitLabToken
      */
     private String token;
@@ -67,5 +72,13 @@ public class DevOpsAppPayloadDevKit extends DevOpsAppPayload {
 
     public void setStatus(Boolean status) {
         this.status = status;
+    }
+
+    public String getOrganizationCode() {
+        return organizationCode;
+    }
+
+    public void setOrganizationCode(String organizationCode) {
+        this.organizationCode = organizationCode;
     }
 }

@@ -246,8 +246,12 @@ public class DevopsSagaHandler {
         LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
         devOpsAppImportPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
 
+        // 新应用的组织编码
+        devOpsAppImportPayloadDevKit.setOrganizationCode(organization.getCode());
+
         // Gitlab的Token
         devOpsAppImportPayloadDevKit.setToken(applicationE.getToken());
+
         data = gson.toJson(devOpsAppImportPayloadDevKit);
         LOGGER.error("data:" + data);
 

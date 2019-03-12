@@ -181,6 +181,9 @@ public class ApplicationServiceImpl implements ApplicationService {
         LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
         devOpsAppPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
 
+        // 新应用组织编码
+        devOpsAppPayloadDevKit.setOrganizationCode(organization.getCode());
+
         if(null != active) {
             // 应用的状态
             LOGGER.error("更新状态:" + active);
