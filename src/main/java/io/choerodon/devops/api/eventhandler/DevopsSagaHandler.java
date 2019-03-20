@@ -183,8 +183,11 @@ public class DevopsSagaHandler {
 
             // 新应用用户名称
             UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppPayload.getUserId()));
-            LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
-            devOpsAppPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
+            String    loginName = iamRepository.queryById(userAttrE.getIamUserId()).getLoginName();
+
+
+            LOGGER.error("用户名称:" + loginName);
+            devOpsAppPayloadDevKit.setUserLogin(loginName);
 
             // Gitlab的Token
             devOpsAppPayloadDevKit.setToken(applicationE.getToken());
@@ -243,8 +246,9 @@ public class DevopsSagaHandler {
 
         // 新应用用户名称
         UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppImportPayload.getUserId()));
-        LOGGER.error("用户名称:" + userAttrE.getGitlabUserName());
-        devOpsAppImportPayloadDevKit.setUserLogin(userAttrE.getGitlabUserName());
+        String    loginName = iamRepository.queryById(userAttrE.getIamUserId()).getLoginName();
+        LOGGER.error("用户名称:" + loginName);
+        devOpsAppImportPayloadDevKit.setUserLogin(loginName);
 
         // 新应用的组织编码
         devOpsAppImportPayloadDevKit.setOrganizationCode(organization.getCode());

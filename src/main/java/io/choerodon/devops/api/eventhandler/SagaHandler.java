@@ -175,7 +175,7 @@ public class SagaHandler {
         projectEventDevKit.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
 
         if(null != projectEvent.getUserId()){
-            UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(projectEvent.getUserId()));
+            UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(projectEvent.getUserId()));
             projectEventDevKit.setUserLogin(userAttrE.getGitlabUserName());
         }
         return gson.toJson(projectEventDevKit);

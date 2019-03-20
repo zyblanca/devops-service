@@ -83,6 +83,17 @@ public class IamRepositoryImpl implements IamRepository {
     }
 
     @Override
+    public UserE queryById(Long id) {
+        try {
+            ResponseEntity<UserDO> responseEntity = iamServiceClient.queryById(id);
+            return ConvertHelper.convert(responseEntity.getBody(), UserE.class);
+        } catch (FeignException e) {
+            LOGGER.error("get user by iam_user_id {} error", id);
+            return null;
+        }
+    }
+
+    @Override
     public List<ProjectE> listIamProjectByOrgId(Long organizationId, String name, String[] params) {
         List<ProjectE> returnList = new ArrayList<>();
         int page = 0;
