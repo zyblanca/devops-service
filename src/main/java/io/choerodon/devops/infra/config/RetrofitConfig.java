@@ -54,7 +54,6 @@ public class RetrofitConfig {
 
     private OkHttpClient getOkHttpClient(Boolean insecureSkipTlsVerify, String token) {
         if (insecureSkipTlsVerify) {
-            LOGGER.info("insecure Skip Tls Verify");
             final TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
                         @Override

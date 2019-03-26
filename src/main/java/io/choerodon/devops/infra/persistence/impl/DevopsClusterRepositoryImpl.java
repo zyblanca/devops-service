@@ -3,15 +3,12 @@ package io.choerodon.devops.infra.persistence.impl;
 import java.util.List;
 import java.util.Map;
 
-import io.kubernetes.client.JSON;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.core.convertor.ConvertPageHelper;
 import io.choerodon.core.domain.Page;
 import io.choerodon.core.exception.CommonException;
 import io.choerodon.devops.domain.application.entity.DevopsClusterE;
+import io.choerodon.devops.domain.application.entity.DevopsEnvPodE;
 import io.choerodon.devops.domain.application.repository.DevopsClusterRepository;
 import io.choerodon.devops.infra.common.util.GenerateUUID;
 import io.choerodon.devops.infra.common.util.TypeUtil;
@@ -19,6 +16,10 @@ import io.choerodon.devops.infra.dataobject.DevopsClusterDO;
 import io.choerodon.devops.infra.mapper.DevopsClusterMapper;
 import io.choerodon.mybatis.pagehelper.PageHelper;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
+import io.kubernetes.client.JSON;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class DevopsClusterRepositoryImpl implements DevopsClusterRepository {
@@ -82,12 +83,14 @@ public class DevopsClusterRepositoryImpl implements DevopsClusterRepository {
 
     @Override
     public Page<DevopsClusterE> pageClusters(Long organizationId, Boolean doPage, PageRequest pageRequest, String params) {
-        Map<String, Object> maps = json.deserialize(params, Map.class);
-        Page<DevopsClusterDO> devopsClusterEPage = new Page<>();
-        if (doPage != null && !doPage) {
-            devopsClusterEPage.setContent(devopsClusterMapper.listClusters(organizationId, TypeUtil.cast(maps.get(TypeUtil.SEARCH_PARAM)), TypeUtil.cast(maps.get(TypeUtil.PARAM))));
+        Page<DevopsClusterDO> devopsClusterEPage;
+        if (!StringUtils.isEmpty(params)) {
+            Map<String, Object> searchParamMap = json.deserialize(params, Map.class);
+            devopsClusterEPage = PageHelper
+                    .doPageAndSort(pageRequest, () -> devopsClusterMapper.listClusters(organizationId, TypeUtil.cast(searchParamMap.get(TypeUtil.SEARCH_PARAM)), TypeUtil.cast(searchParamMap.get(TypeUtil.PARAM))));
         } else {
-            devopsClusterEPage = PageHelper.doPageAndSort(pageRequest, () -> devopsClusterMapper.listClusters(organizationId, TypeUtil.cast(maps.get(TypeUtil.SEARCH_PARAM)), TypeUtil.cast(maps.get(TypeUtil.PARAM))));
+            devopsClusterEPage = PageHelper.doPageAndSort(
+                    pageRequest, () -> devopsClusterMapper.listClusters(organizationId, null, null));
         }
         return ConvertPageHelper.convertPage(devopsClusterEPage, DevopsClusterE.class);
     }
@@ -107,5 +110,10 @@ public class DevopsClusterRepositoryImpl implements DevopsClusterRepository {
     @Override
     public List<DevopsClusterE> list() {
         return ConvertHelper.convertList(devopsClusterMapper.selectAll(), DevopsClusterE.class);
+    }
+
+    @Override
+    public Page<DevopsEnvPodE> pageQueryPodsByNodeName(Long clusterId, String nodeName, PageRequest pageRequest, String searchParam) {
+        return ConvertPageHelper.convertPage(PageHelper.doPageAndSort(pageRequest, () -> devopsClusterMapper.pageQueryPodsByNodeName(clusterId, nodeName, searchParam)), DevopsEnvPodE.class);
     }
 }

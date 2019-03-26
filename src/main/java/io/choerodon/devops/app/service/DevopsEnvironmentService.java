@@ -5,7 +5,6 @@ import java.util.List;
 import io.choerodon.asgard.saga.feign.SagaClient;
 import io.choerodon.core.domain.Page;
 import io.choerodon.devops.api.dto.*;
-import io.choerodon.devops.domain.application.entity.DevopsEnvironmentE;
 import io.choerodon.devops.domain.application.event.GitlabProjectPayload;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
 
@@ -108,8 +107,6 @@ public interface DevopsEnvironmentService {
 
     EnvSyncStatusDTO queryEnvSyncStatus(Long projectId, Long envId);
 
-    String handDevopsEnvGitRepository(DevopsEnvironmentE devopsEnvironmentE);
-
     /**
      * 分页查询项目下用户权限
      *
@@ -158,6 +155,10 @@ public interface DevopsEnvironmentService {
      * @param projectId 可为空
      */
     void setEnvErrStatus(String data, Long projectId);
+
+
+    DevopsEnviromentRepDTO queryByCode(Long clusterId, String code);
+
 
     void initMockService(SagaClient sagaClient);
 

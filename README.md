@@ -13,7 +13,6 @@ Integrated several open source tools to automate the process of `planning`, `cod
 - Deploy management
 - Ingress management
 
-
 ## Requirements
 - Java8
 - [GitLab Service](https://github.com/choerodon/gitlab-service)

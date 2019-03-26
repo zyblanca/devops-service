@@ -15,11 +15,10 @@ import io.choerodon.asgard.saga.dto.StartInstanceDTO;
 import io.choerodon.asgard.saga.feign.SagaClient;
 import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.core.exception.CommonException;
-import io.choerodon.devops.api.dto.GitConfigDTO;
-import io.choerodon.devops.api.dto.JobLogDTO;
-import io.choerodon.devops.api.dto.PodUpdateDTO;
-import io.choerodon.devops.api.dto.TestReleaseStatus;
+import io.choerodon.devops.api.dto.*;
+import io.choerodon.devops.app.service.ClusterNodeInfoService;
 import io.choerodon.devops.app.service.DeployMsgHandlerService;
+import io.choerodon.devops.app.service.DevopsConfigMapService;
 import io.choerodon.devops.domain.application.entity.*;
 import io.choerodon.devops.domain.application.factory.DevopsInstanceResourceFactory;
 import io.choerodon.devops.domain.application.repository.*;
@@ -142,6 +141,10 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
     private SagaClient sagaClient;
     @Autowired
     private DevopsConfigMapRepository devopsConfigMapRepository;
+    @Autowired
+    private ClusterNodeInfoService clusterNodeInfoService;
+    @Autowired
+    private DevopsConfigMapService devopsConfigMapService;
 
 
     public void handlerUpdatePodMessage(String key, String msg, Long envId) {
@@ -188,6 +191,8 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
         devopsEnvPodE.setResourceVersion(resourceVersion);
         devopsEnvPodE.setNamespace(v1Pod.getMetadata().getNamespace());
         devopsEnvPodE.setReady(getReadyValue(status, v1Pod));
+        devopsEnvPodE.setNodeName(v1Pod.getSpec().getNodeName());
+        devopsEnvPodE.setRestartCount(K8sUtil.getRestartCountForPod(v1Pod));
 
         Boolean flag = false;
         if (applicationInstanceE.getId() != null) {
@@ -571,6 +576,8 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
         }
         ApplicationInstanceE applicationInstanceE = applicationInstanceRepository
                 .selectByCode(KeyParseTool.getReleaseName(key), envId);
+        // 删除实例历史日志记录
+        devopsEnvCommandLogRepository.deletePreInstanceCommandLog(applicationInstanceE.getId());
         if (applicationInstanceE != null) {
             DevopsEnvCommandE devopsEnvCommandE = devopsEnvCommandRepository
                     .queryByObject(ObjectType.INSTANCE.getType(), applicationInstanceE.getId());
@@ -1401,6 +1408,8 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
         devopsEnvPodE.setNamespace(v1Pod.getMetadata().getNamespace());
         devopsEnvPodE.setReady(getReadyValue(status, v1Pod));
         devopsEnvPodE.initApplicationInstanceE(applicationInstanceE.getId());
+        devopsEnvPodE.setNodeName(v1Pod.getSpec().getNodeName());
+        devopsEnvPodE.setRestartCount(K8sUtil.getRestartCountForPod(v1Pod));
         devopsEnvPodRepository.insert(devopsEnvPodE);
         Long podId = devopsEnvPodRepository.get(devopsEnvPodE).getId();
         v1Pod.getSpec().getContainers().forEach(t ->
@@ -1415,6 +1424,8 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
         try {
             DevopsEnvCommandE devopsEnvCommandE = devopsEnvCommandRepository
                     .queryByObject(ObjectType.INSTANCE.getType(), devopsEnvResourceE.getApplicationInstanceE().getId());
+            // 删除实例事件记录
+            devopsCommandEventRepository.deletePreInstanceCommandEvent(devopsEnvCommandE.getObjectId());
             DevopsCommandEventE devopsCommandEventE = new DevopsCommandEventE();
             devopsCommandEventE.setEventCreationTime(event.getMetadata().getCreationTimestamp());
             devopsCommandEventE.setMessage(event.getMessage());
@@ -1433,17 +1444,16 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
         List<ApplicationE> applications = new ArrayList<>();
         ApplicationE applicationE = applicationRepository
                 .queryByCode(appName, projectId);
-        if (applicationE == null) {
-            List<ApplicationE> applicationES = applicationRepository.listByCode(appName);
-            List<ApplicationE> applicationList = applicationES.stream()
-                    .filter(newApplicationE ->
-                            iamRepository.queryIamProject(newApplicationE.getProjectE().getId())
-                                    .getOrganization().getId().equals(orgId))
-                    .collect(Collectors.toList());
-            applications = findAppInAppMarket(applicationES, applicationList);
-        } else {
+        if (applicationE != null) {
             applications.add(applicationE);
         }
+        List<ApplicationE> applicationES = applicationRepository.listByCode(appName);
+        List<ApplicationE> applicationList = applicationES.stream()
+                .filter(newApplicationE ->
+                        iamRepository.queryIamProject(newApplicationE.getProjectE().getId())
+                                .getOrganization().getId().equals(orgId))
+                .collect(Collectors.toList());
+        applications.addAll(findAppInAppMarket(applicationES, applicationList));
         return applications;
     }
 
@@ -1455,17 +1465,16 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
                     applications.add(applicationE);
                 }
             });
-        } else {
-            if (applicationES.isEmpty()) {
-                applicationES.forEach(applicationE -> {
-                    ApplicationMarketE applicationMarketE =
-                            applicationMarketRepository.queryByAppId(applicationE.getId());
-                    if (applicationMarketE != null
-                            || !applicationMarketE.getPublishLevel().equals(PUBLIC)) {
-                        applications.add(applicationE);
-                    }
-                });
-            }
+        }
+        if (!applicationES.isEmpty()) {
+            applicationES.forEach(applicationE -> {
+                ApplicationMarketE applicationMarketE =
+                        applicationMarketRepository.queryByAppId(applicationE.getId());
+                if (applicationMarketE != null
+                        || !applicationMarketE.getPublishLevel().equals(PUBLIC)) {
+                    applications.add(applicationE);
+                }
+            });
         }
         return applications;
     }
@@ -1912,6 +1921,32 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
             envId = devopsEnvironmentE.getId();
         }
         return envId;
+    }
+
+    @Override
+    public void handleNodeSync(String msg, Long clusterId) {
+        clusterNodeInfoService.setValueForKey(clusterNodeInfoService.getRedisClusterKey(clusterId), JSONArray.parseArray(msg, AgentNodeInfoDTO.class));
+    }
+
+    @Override
+    public void handleConfigUpdate(String key, String msg, Long clusterId) {
+        Long envId = getEnvId(key, clusterId);
+        if (envId == null) {
+            logger.info(ENV_NOT_EXIST, KeyParseTool.getNamespace(key));
+            return;
+        }
+        DevopsEnvironmentE devopsEnvironmentE = devopsEnvironmentRepository.queryById(envId);
+        V1ConfigMap v1ConfigMap = json.deserialize(msg, V1ConfigMap.class);
+        DevopsConfigMapE devopsConfigMapE = devopsConfigMapRepository.queryByEnvIdAndName(envId, v1ConfigMap.getMetadata().getName());
+        if (devopsConfigMapE == null) {
+            DevopsConfigMapDTO devopsConfigMapDTO = new DevopsConfigMapDTO();
+            devopsConfigMapDTO.setDescription(v1ConfigMap.getMetadata().getName() + " config");
+            devopsConfigMapDTO.setEnvId(envId);
+            devopsConfigMapDTO.setName(v1ConfigMap.getMetadata().getName());
+            devopsConfigMapDTO.setType("create");
+            devopsConfigMapDTO.setValue(v1ConfigMap.getData());
+            devopsConfigMapService.createOrUpdate(devopsEnvironmentE.getProjectE().getId(), true, devopsConfigMapDTO);
+        }
     }
 }
 

@@ -58,19 +58,32 @@ function docker_build(){
     docker push ${DOCKER_REGISTRY}/${GROUP_NAME}/${PROJECT_NAME}:${CI_COMMIT_TAG}
 }
 function chart_build(){
+    #判断chart主目录名是否与应用编码保持一致
+    CHART_DIRECTORY_PATH=`find . -maxdepth 2 -name ${PROJECT_NAME}`
+    if [ ! -n "${CHART_DIRECTORY_PATH}" ]; then
+        echo "The chart's home directory should be consistent with the application code!"
+        exit 1
+    fi
     CHART_PATH=`find . -maxdepth 3 -name Chart.yaml`
     sed -i 's/repository:.*$/repository\:\ '${DOCKER_REGISTRY}'\/'${GROUP_NAME}'\/'${PROJECT_NAME}'/g' ${CHART_PATH%/*}/values.yaml
     helm package ${CHART_PATH%/*} --version ${CI_COMMIT_TAG} --app-version ${CI_COMMIT_TAG}
     TEMP=${CHART_PATH%/*}
     FILE_NAME=${TEMP##*/}
-    curl -X POST \
+    # 通过Choerodon API上传chart包
+    result_http_code=`curl -X POST \
         -F "token=${Token}" \
         -F "version=${CI_COMMIT_TAG}" \
         -F "file=@${FILE_NAME}-${CI_COMMIT_TAG}.tgz" \
         -F "commit=${CI_COMMIT_SHA}" \
         -F "image=${DOCKER_REGISTRY}/${GROUP_NAME}/${PROJECT_NAME}:${CI_COMMIT_TAG}" \
-        "${CHOERODON_URL}/devops/ci"
-    if [ $? -ne 0 ]; then
+        "${CHOERODON_URL}/devops/ci" \
+        -o "${CI_COMMIT_SHA}-ci.response" \
+        -w %{http_code}`
+    # 判断本次上传是否出错
+    response_content=`cat "${CI_COMMIT_SHA}-ci.response"`
+    rm "${CI_COMMIT_SHA}-ci.response"
+    if [ "$result_http_code" != "200" ]; then
+        echo $response_content
         echo "upload chart error"
         exit 1
     fi

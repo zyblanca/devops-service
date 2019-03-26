@@ -1,6 +1,5 @@
 package io.choerodon.devops.api.eventhandler;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -169,7 +168,7 @@ public class SagaHandler {
      * @return
      */
     private String gitlabGroupIdPayload(ProjectEvent  projectEvent) {
-        GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(projectEvent.getProjectId());
+        GitlabGroupE       gitlabGroupE       = projectService.queryDevopsProject(projectEvent.getProjectId());
         ProjectEventDevKit projectEventDevKit = new ProjectEventDevKit();
         BeanUtils.copyProperties(projectEvent, projectEventDevKit);
         projectEventDevKit.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
@@ -256,7 +255,6 @@ public class SagaHandler {
                 }.getType());
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.deleteGitlabGroupMemberRole(gitlabGroupMemberDTOList);
-
 
         // 对接DevKit
         List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();

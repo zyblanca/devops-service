@@ -20,6 +20,13 @@ public interface ProjectService {
     void createProject(ProjectEvent projectEvent);
 
     /**
+     * 查询项目在gitlab中组是否创建
+     * @param projectId 项目Id
+     * @return  gitlab group Ready
+     */
+    boolean queryProjectGitlabGroupReady(Long projectId);
+
+    /**
      * 根据ProjectId查询GitlabGroup
      * @param projectId
      * @return

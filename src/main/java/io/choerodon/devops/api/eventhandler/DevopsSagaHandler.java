@@ -48,6 +48,7 @@ public class DevopsSagaHandler {
     private final ApplicationTemplateRepository applicationTemplateRepository;
     private final DevopsEnvironmentRepository devopsEnvironmentRepository;
 
+
     @Value("${services.gitlab.url}")
     private String gitlabUrl;
 
@@ -56,7 +57,6 @@ public class DevopsSagaHandler {
 
     @Autowired
     private UserAttrRepository userAttrRepository;
-
 
     @Autowired
     public DevopsSagaHandler(DevopsEnvironmentService devopsEnvironmentService,
@@ -149,12 +149,13 @@ public class DevopsSagaHandler {
             maxRetryCount = 3,
             seq = 1)
     public String createApp(String data) {
-        DevOpsAppPayload       devOpsAppPayload             = gson.fromJson(data, DevOpsAppPayload.class);
+        DevOpsAppPayload devOpsAppPayload = gson.fromJson(data, DevOpsAppPayload.class);
+
         DevOpsAppPayloadDevKit devOpsAppPayloadDevKit       = gson.fromJson(data, DevOpsAppPayloadDevKit.class);
-        String token;
+
         if (devOpsAppPayload.getType().equals(APPLICATION)) {
             try {
-                token = applicationService.operationApplication(devOpsAppPayload);
+                applicationService.operationApplication(devOpsAppPayload);
             } catch (Exception e) {
                 applicationService.setAppErrStatus(data, devOpsAppPayload.getIamProjectId());
                 throw e;
@@ -193,12 +194,13 @@ public class DevopsSagaHandler {
             devOpsAppPayloadDevKit.setToken(applicationE.getToken());
 
             LOGGER.error("=============== End =================");
-        }
 
+        }
 
         data = gson.toJson(devOpsAppPayloadDevKit);
         LOGGER.error("data:" + data);
         //===== 对接DevKit,创建新应用通知到DevKit =====
+
         return data;
     }
 
@@ -212,8 +214,6 @@ public class DevopsSagaHandler {
             seq = 1)
     public String importApp(String data) {
         DevOpsAppImportPayload devOpsAppImportPayload = gson.fromJson(data, DevOpsAppImportPayload.class);
-        DevOpsAppImportPayloadDevKit devOpsAppImportPayloadDevKit = new DevOpsAppImportPayloadDevKit();
-        ApplicationE applicationE = new ApplicationE();
         if (devOpsAppImportPayload.getType().equals(APPLICATION)) {
             try {
                 applicationService.operationApplicationImport(devOpsAppImportPayload);
@@ -221,43 +221,45 @@ public class DevopsSagaHandler {
                 applicationService.setAppErrStatus(data, devOpsAppImportPayload.getIamProjectId());
                 throw e;
             }
-            applicationE = applicationRepository.query(devOpsAppImportPayload.getAppId());
+            ApplicationE applicationE = applicationRepository.query(devOpsAppImportPayload.getAppId());
             if (applicationE.getFailed() != null && applicationE.getFailed()) {
                 applicationE.setFailed(false);
                 if (1 != applicationRepository.update(applicationE)) {
                     LOGGER.error("update application set create success status error");
                 }
             }
+
+            //===== 对接DevKit,创建新应用通知到DevKit =====
+            DevOpsAppImportPayloadDevKit devOpsAppImportPayloadDevKit = new DevOpsAppImportPayloadDevKit();
+
+            BeanUtils.copyProperties(devOpsAppImportPayload, devOpsAppImportPayloadDevKit);
+            // 新应用名称
+            devOpsAppImportPayloadDevKit.setItemName(applicationE.getName());
+
+            // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
+            String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
+            LOGGER.error("=============== Begin =================");
+            ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
+            LOGGER.error("项目编码:" + projectE.getCode());
+            Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+            LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+            devOpsAppImportPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+
+            // 新应用用户名称
+            UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppImportPayload.getUserId()));
+            String    loginName = iamRepository.queryById(userAttrE.getIamUserId()).getLoginName();
+            LOGGER.error("用户名称:" + loginName);
+            devOpsAppImportPayloadDevKit.setUserLogin(loginName);
+
+            // 新应用的组织编码
+            devOpsAppImportPayloadDevKit.setOrganizationCode(organization.getCode());
+
+            // Gitlab的Token
+            devOpsAppImportPayloadDevKit.setToken(applicationE.getToken());
+
+            data = gson.toJson(devOpsAppImportPayloadDevKit);
+            LOGGER.error("data:" + data);
         }
-
-        //===== 对接DevKit,创建新应用通知到DevKit =====
-        BeanUtils.copyProperties(devOpsAppImportPayload, devOpsAppImportPayloadDevKit);
-        // 新应用名称
-        devOpsAppImportPayloadDevKit.setItemName(applicationE.getName());
-
-        // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
-        String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
-        LOGGER.error("=============== Begin =================");
-        ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
-        LOGGER.error("项目编码:" + projectE.getCode());
-        Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
-        LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
-        devOpsAppImportPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
-
-        // 新应用用户名称
-        UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppImportPayload.getUserId()));
-        String    loginName = iamRepository.queryById(userAttrE.getIamUserId()).getLoginName();
-        LOGGER.error("用户名称:" + loginName);
-        devOpsAppImportPayloadDevKit.setUserLogin(loginName);
-
-        // 新应用的组织编码
-        devOpsAppImportPayloadDevKit.setOrganizationCode(organization.getCode());
-
-        // Gitlab的Token
-        devOpsAppImportPayloadDevKit.setToken(applicationE.getToken());
-
-        data = gson.toJson(devOpsAppImportPayloadDevKit);
-        LOGGER.error("data:" + data);
 
         return data;
     }

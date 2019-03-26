@@ -117,7 +117,6 @@ public class ApplicationInstanceServiceImpl implements ApplicationInstanceServic
     private CheckOptionsHandler checkOptionsHandler;
 
 
-
     @Override
     public Page<DevopsEnvPreviewInstanceDTO> listApplicationInstance(Long projectId, PageRequest pageRequest,
                                                                      Long envId, Long versionId, Long appId, String params) {
@@ -448,6 +447,32 @@ public class ApplicationInstanceServiceImpl implements ApplicationInstanceServic
         deployService.operatePodCount(deploymentName, devopsEnvironmentE.getCode(), devopsEnvironmentE.getClusterE().getId(), count);
     }
 
+    @Override
+    public Page<AppInstanceCommandLogDTO> listAppInstanceCommand(PageRequest pageRequest, Long appInstanceId, Date startTime, Date endTime) {
+        Page<DevopsEnvCommandE> devopsEnvCommandES = devopsEnvCommandRepository.listByObject(pageRequest, ObjectType.INSTANCE.getType(), appInstanceId, startTime, endTime);
+        Set<Long> userIds = new HashSet<>();
+        devopsEnvCommandES.stream().forEach(devopsEnvCommandE ->
+                userIds.add(devopsEnvCommandE.getCreatedBy())
+        );
+        List<UserE> userES = iamRepository.listUsersByIds(new ArrayList<>(userIds));
+        Page<AppInstanceCommandLogDTO> pageAppInstanceCommandLogDTOS = new Page<>();
+        List<AppInstanceCommandLogDTO> appInstanceCommandLogDTOS = new ArrayList<>();
+        BeanUtils.copyProperties(devopsEnvCommandES, pageAppInstanceCommandLogDTOS);
+        devopsEnvCommandES.stream().forEach(devopsEnvCommandE -> {
+            AppInstanceCommandLogDTO appInstanceCommandLogDTO = new AppInstanceCommandLogDTO();
+            appInstanceCommandLogDTO.setType(devopsEnvCommandE.getCommandType());
+            userES.stream().filter(userE -> userE.getId().equals(devopsEnvCommandE.getCreatedBy())).forEach(userE -> {
+                appInstanceCommandLogDTO.setUserImage(userE.getImageUrl());
+                appInstanceCommandLogDTO.setLoginName(userE.getLoginName());
+                appInstanceCommandLogDTO.setRealName(userE.getRealName());
+            });
+            appInstanceCommandLogDTO.setCreateTime(devopsEnvCommandE.getCreationDate());
+            appInstanceCommandLogDTOS.add(appInstanceCommandLogDTO);
+        });
+        pageAppInstanceCommandLogDTOS.setContent(appInstanceCommandLogDTOS);
+        return pageAppInstanceCommandLogDTOS;
+    }
+
     private DevopsEnvironmentE checkEnvPermission(Long envId) {
         devopsEnvUserPermissionRepository.checkEnvDeployPermission(TypeUtil.objToLong(GitUserNameUtil.getUserId()),
                 envId);
@@ -752,7 +777,7 @@ public class ApplicationInstanceServiceImpl implements ApplicationInstanceServic
             }
 
             //判断当前容器目录下是否存在环境对应的gitops文件目录，不存在则克隆
-            String filePath = devopsEnvironmentService.handDevopsEnvGitRepository(devopsEnvironmentE);
+            String filePath = envUtil.handDevopsEnvGitRepository(devopsEnvironmentE);
 
             //在gitops库处理instance文件
             ObjectOperation<C7nHelmRelease> objectOperation = new ObjectOperation<>();
@@ -953,7 +978,7 @@ public class ApplicationInstanceServiceImpl implements ApplicationInstanceServic
         applicationInstanceRepository.update(instanceE);
 
         //判断当前容器目录下是否存在环境对应的gitops文件目录，不存在则克隆
-        String path = devopsEnvironmentService.handDevopsEnvGitRepository(devopsEnvironmentE);
+        String path = envUtil.handDevopsEnvGitRepository(devopsEnvironmentE);
 
         //如果对象所在文件只有一个对象，则直接删除文件,否则把对象从文件中去掉，更新文件
         DevopsEnvFileResourceE devopsEnvFileResourceE = devopsEnvFileResourceRepository

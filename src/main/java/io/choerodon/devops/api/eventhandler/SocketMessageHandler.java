@@ -30,7 +30,7 @@ public class SocketMessageHandler extends AbstractAgentMsgHandler {
 
     @Override
     public void process(Msg msg) {
-        HelmType helmType = HelmType.forString(String.valueOf(msg.getType()));
+        HelmType helmType = HelmType.forValue(String.valueOf(msg.getType()));
         if (helmType == null) {
             return;
         }
@@ -199,6 +199,12 @@ public class SocketMessageHandler extends AbstractAgentMsgHandler {
                 break;
             case CERT_MANAGER_INFO:
                 deployMsgHandlerService.getCertManagerInfo(msg.getPayload(), TypeUtil.objToLong(msg.getClusterId()));
+                break;
+            case NODE_SYNC:
+                deployMsgHandlerService.handleNodeSync(msg.getPayload(), TypeUtil.objToLong(msg.getClusterId()));
+                break;
+            case CONFIG_UPDATE:
+                deployMsgHandlerService.handleConfigUpdate(msg.getKey(), msg.getPayload(), TypeUtil.objToLong(msg.getClusterId()));
                 break;
             default:
                 break;

@@ -7,33 +7,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.choerodon.core.convertor.ConvertHelper;
+import io.choerodon.core.domain.Page;
+import io.choerodon.core.exception.CommonException;
+import io.choerodon.devops.api.dto.*;
+import io.choerodon.devops.app.service.ClusterNodeInfoService;
+import io.choerodon.devops.app.service.DevopsClusterService;
+import io.choerodon.devops.domain.application.entity.*;
+import io.choerodon.devops.domain.application.repository.*;
+import io.choerodon.devops.infra.common.util.EnvUtil;
+import io.choerodon.devops.infra.common.util.FileUtil;
+import io.choerodon.devops.infra.common.util.GenerateUUID;
+import io.choerodon.devops.infra.dataobject.DevopsEnvPodContainerDO;
+import io.choerodon.devops.infra.dataobject.iam.ProjectDO;
+import io.choerodon.mybatis.pagehelper.domain.PageRequest;
+import io.choerodon.websocket.helper.EnvListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import io.choerodon.core.convertor.ConvertHelper;
-import io.choerodon.core.domain.Page;
-import io.choerodon.core.exception.CommonException;
-import io.choerodon.devops.api.dto.DevopsClusterRepDTO;
-import io.choerodon.devops.api.dto.DevopsClusterReqDTO;
-import io.choerodon.devops.api.dto.ProjectDTO;
-import io.choerodon.devops.app.service.DevopsClusterService;
-import io.choerodon.devops.domain.application.entity.DevopsClusterE;
-import io.choerodon.devops.domain.application.entity.DevopsClusterProPermissionE;
-import io.choerodon.devops.domain.application.entity.DevopsEnvironmentE;
-import io.choerodon.devops.domain.application.entity.ProjectE;
-import io.choerodon.devops.domain.application.repository.DevopsClusterProPermissionRepository;
-import io.choerodon.devops.domain.application.repository.DevopsClusterRepository;
-import io.choerodon.devops.domain.application.repository.DevopsEnvironmentRepository;
-import io.choerodon.devops.domain.application.repository.IamRepository;
-import io.choerodon.devops.infra.common.util.EnvUtil;
-import io.choerodon.devops.infra.common.util.FileUtil;
-import io.choerodon.devops.infra.common.util.GenerateUUID;
-import io.choerodon.devops.infra.dataobject.iam.ProjectDO;
-import io.choerodon.mybatis.pagehelper.domain.PageRequest;
-import io.choerodon.websocket.helper.EnvListener;
 
 
 @Service
@@ -60,6 +53,10 @@ public class DevopsClusterServiceImpl implements DevopsClusterService {
     private EnvListener envListener;
     @Autowired
     private DevopsEnvironmentRepository devopsEnvironmentRepository;
+    @Autowired
+    private ClusterNodeInfoService clusterNodeInfoService;
+    @Autowired
+    private DevopsEnvPodContainerRepository devopsEnvPodContainerRepository;
 
 
     @Override
@@ -169,10 +166,7 @@ public class DevopsClusterServiceImpl implements DevopsClusterService {
 
     @Override
     public String queryShell(Long clusterId) {
-        DevopsClusterE devopsClusterE = devopsClusterRepository.query(clusterId);
-        List<Long> connectedEnvList = envUtil.getConnectedEnvList(envListener);
-        List<Long> updatedEnvList = envUtil.getUpdatedEnvList(envListener);
-        setClusterStatus(connectedEnvList, updatedEnvList, devopsClusterE);
+        DevopsClusterE devopsClusterE = getDevopsClusterEStatus(clusterId);
         InputStream inputStream;
         if (devopsClusterE.getUpgrade()) {
             inputStream = this.getClass().getResourceAsStream("/shell/cluster-upgrade.sh");
@@ -191,6 +185,14 @@ public class DevopsClusterServiceImpl implements DevopsClusterService {
         return FileUtil.replaceReturnString(inputStream, params);
     }
 
+    private DevopsClusterE getDevopsClusterEStatus(Long clusterId) {
+        DevopsClusterE devopsClusterE = devopsClusterRepository.query(clusterId);
+        List<Long> connectedEnvList = envUtil.getConnectedEnvList(envListener);
+        List<Long> updatedEnvList = envUtil.getUpdatedEnvList(envListener);
+        setClusterStatus(connectedEnvList, updatedEnvList, devopsClusterE);
+        return devopsClusterE;
+    }
+
     @Override
     public void checkCode(Long organizationId, String code) {
         DevopsClusterE devopsClusterE = new DevopsClusterE();
@@ -200,20 +202,40 @@ public class DevopsClusterServiceImpl implements DevopsClusterService {
     }
 
     @Override
-    public Page<DevopsClusterRepDTO> pageClusters(Long organizationId, Boolean doPage, PageRequest pageRequest,
-                                                  String params) {
+    public Page<ClusterWithNodesDTO> pageClusters(Long organizationId, Boolean doPage, PageRequest pageRequest, String params) {
         Page<DevopsClusterE> devopsClusterEPage = devopsClusterRepository
                 .pageClusters(organizationId, doPage, pageRequest, params);
-        Page<DevopsClusterRepDTO> devopsClusterRepDTOPage = new Page<>();
+        Page<ClusterWithNodesDTO> devopsClusterRepDTOPage = new Page<>();
         BeanUtils.copyProperties(devopsClusterEPage, devopsClusterRepDTOPage);
         List<Long> connectedEnvList = envUtil.getConnectedEnvList(envListener);
         List<Long> updatedEnvList = envUtil.getUpdatedEnvList(envListener);
         devopsClusterEPage.getContent().forEach(devopsClusterE ->
                 setClusterStatus(connectedEnvList, updatedEnvList, devopsClusterE));
-        devopsClusterRepDTOPage.setContent(ConvertHelper.convertList(devopsClusterEPage.getContent(),
-                DevopsClusterRepDTO.class));
+        devopsClusterRepDTOPage.setContent(fromClusterE2ClusterWithNodesDTO(devopsClusterEPage.getContent(), organizationId));
         return devopsClusterRepDTOPage;
     }
+
+    /**
+     * convert cluster entity to instances of {@link ClusterWithNodesDTO}
+     *
+     * @param clusterEList   the cluster entities
+     * @param organizationId the organization id
+     * @return the instances of the return type
+     */
+    private List<ClusterWithNodesDTO> fromClusterE2ClusterWithNodesDTO(List<DevopsClusterE> clusterEList, Long organizationId) {
+        // default three records of nodes in the instance
+        PageRequest pageRequest = new PageRequest(0, 3);
+
+        return clusterEList.stream().map(cluster -> {
+            ClusterWithNodesDTO clusterWithNodesDTO = new ClusterWithNodesDTO();
+            BeanUtils.copyProperties(cluster, clusterWithNodesDTO);
+            if (Boolean.TRUE.equals(clusterWithNodesDTO.getConnect())) {
+                clusterWithNodesDTO.setNodes(clusterNodeInfoService.pageQueryClusterNodeInfo(cluster.getId(), organizationId, pageRequest));
+            }
+            return clusterWithNodesDTO;
+        }).collect(Collectors.toList());
+    }
+
 
     @Override
     public List<ProjectDTO> listClusterProjects(Long organizationId, Long clusterId) {
@@ -241,20 +263,50 @@ public class DevopsClusterServiceImpl implements DevopsClusterService {
     }
 
     @Override
-    public String deleteCluster(Long clusterId) {
+    public void deleteCluster(Long clusterId) {
+        devopsClusterRepository.delete(clusterId);
+    }
+
+    @Override
+    public Boolean IsClusterRelatedEnvs(Long clusterId) {
         List<Long> connectedEnvList = envUtil.getConnectedEnvList(envListener);
         List<DevopsEnvironmentE> devopsEnvironmentES = devopsEnvironmentRepository.listByClusterId(clusterId);
-        if (!connectedEnvList.contains(clusterId) && devopsEnvironmentES.isEmpty()) {
-            devopsClusterRepository.delete(clusterId);
-        } else {
+        if (connectedEnvList.contains(clusterId) || !devopsEnvironmentES.isEmpty()) {
             throw new CommonException("error.cluster.delete");
         }
-        InputStream inputStream = this.getClass().getResourceAsStream("/shell/cluster-delete.sh");
-        return FileUtil.replaceReturnString(inputStream, null);
+        return true;
     }
+
 
     @Override
     public DevopsClusterRepDTO getCluster(Long clusterId) {
         return ConvertHelper.convert(devopsClusterRepository.query(clusterId), DevopsClusterRepDTO.class);
+    }
+
+    @Override
+    public Page<DevopsClusterPodDTO> pageQueryPodsByNodeName(Long clusterId, String nodeName, PageRequest pageRequest, String searchParam) {
+        Page<DevopsEnvPodE> ePage = devopsClusterRepository.pageQueryPodsByNodeName(clusterId, nodeName, pageRequest, searchParam);
+        Page<DevopsClusterPodDTO> clusterPodDTOPage = new Page<>();
+        BeanUtils.copyProperties(ePage, clusterPodDTOPage, "content");
+        clusterPodDTOPage.setContent(ePage.getContent().stream().map(this::podE2ClusterPodDTO).collect(Collectors.toList()));
+        return clusterPodDTOPage;
+    }
+
+    /**
+     * pod entity to cluster pod dto
+     *
+     * @param pod pod entity
+     * @return the cluster pod dto
+     */
+    private DevopsClusterPodDTO podE2ClusterPodDTO(DevopsEnvPodE pod) {
+        DevopsClusterPodDTO devopsEnvPodDTO = new DevopsClusterPodDTO();
+        BeanUtils.copyProperties(pod, devopsEnvPodDTO);
+        devopsEnvPodDTO.setContainersForLogs(
+                devopsEnvPodContainerRepository.list(new DevopsEnvPodContainerDO(pod.getId()))
+                        .stream()
+                        .map(container -> new DevopsEnvPodContainerLogDTO(pod.getName(), container.getContainerName()))
+                        .collect(Collectors.toList())
+        );
+        return devopsEnvPodDTO;
     }
 }

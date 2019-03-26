@@ -3,25 +3,24 @@ package io.choerodon.devops.api.controller.v1;
 import java.util.List;
 import java.util.Optional;
 
-import io.choerodon.devops.infra.common.util.enums.GitPlatformType;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
-
 import io.choerodon.core.domain.Page;
 import io.choerodon.core.exception.CommonException;
 import io.choerodon.core.iam.InitRoleCode;
 import io.choerodon.core.iam.ResourceLevel;
 import io.choerodon.devops.api.dto.*;
 import io.choerodon.devops.app.service.ApplicationService;
+import io.choerodon.devops.infra.common.util.enums.GitPlatformType;
 import io.choerodon.mybatis.pagehelper.annotation.SortDefault;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
 import io.choerodon.mybatis.pagehelper.domain.Sort;
 import io.choerodon.swagger.annotation.CustomPageRequest;
 import io.choerodon.swagger.annotation.Permission;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 /**
  * Created by younger on 2018/4/4.
@@ -302,16 +301,36 @@ public class ApplicationController {
      * @param projectId 项目ID
      * @param code      应用code
      */
-    @Permission(level = ResourceLevel.PROJECT, roles = {InitRoleCode.PROJECT_OWNER})
+    @Permission(level = ResourceLevel.PROJECT, roles = {InitRoleCode.PROJECT_OWNER, InitRoleCode.PROJECT_MEMBER})
     @ApiOperation(value = "创建应用校验编码是否存在")
     @GetMapping(value = "/check_code")
     public void checkCode(
             @ApiParam(value = "项目ID", required = true)
             @PathVariable(value = "project_id") Long projectId,
-            @ApiParam(value = "环境名", required = true)
+            @ApiParam(value = "应用编码", required = true)
             @RequestParam String code) {
         applicationService.checkCode(projectId, code);
     }
+
+    /**
+     * 根据应用编码查询应用
+     *
+     * @param projectId 项目ID
+     * @param code      应用code
+     */
+    @Permission(level = ResourceLevel.PROJECT, roles = {InitRoleCode.PROJECT_OWNER})
+    @ApiOperation(value = "根据应用编码查询应用")
+    @GetMapping(value = "/query_by_code")
+    public ResponseEntity<ApplicationRepDTO> queryByCode(
+            @ApiParam(value = "项目ID", required = true)
+            @PathVariable(value = "project_id") Long projectId,
+            @ApiParam(value = "应用编码", required = true)
+            @RequestParam String code) {
+        return Optional.ofNullable(applicationService.queryByCode(projectId, code))
+                .map(target -> new ResponseEntity<>(target, HttpStatus.OK))
+                .orElseThrow(() -> new CommonException("error.application.get"));
+    }
+
 
     /**
      * 查询应用模板
@@ -324,8 +343,10 @@ public class ApplicationController {
     @GetMapping("/template")
     public ResponseEntity<List<ApplicationTemplateRepDTO>> listTemplate(
             @ApiParam(value = "项目ID", required = true)
-            @PathVariable(value = "project_id") Long projectId) {
-        return Optional.ofNullable(applicationService.listTemplate(projectId))
+            @PathVariable(value = "project_id") Long projectId,
+            @ApiParam(value = "是否只查询预定义")
+            @RequestParam(required = false) Boolean isPredefined) {
+        return Optional.ofNullable(applicationService.listTemplate(projectId,isPredefined))
                 .map(target -> new ResponseEntity<>(target, HttpStatus.OK))
                 .orElseThrow(() -> new CommonException("error.template.get"));
     }
