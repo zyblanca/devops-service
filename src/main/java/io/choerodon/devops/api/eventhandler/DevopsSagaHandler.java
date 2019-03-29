@@ -179,7 +179,7 @@ public class DevopsSagaHandler {
             ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
             LOGGER.error("项目编码:" + projectE.getCode());
             Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
-            LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+            LOGGER.error("组织编码:" + organization.getCode());
             devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
 
             // 新应用用户名称
@@ -242,7 +242,7 @@ public class DevopsSagaHandler {
             ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
             LOGGER.error("项目编码:" + projectE.getCode());
             Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
-            LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+            LOGGER.error("组织编码:" + organization.getCode());
             devOpsAppImportPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
 
             // 新应用用户名称

@@ -230,13 +230,17 @@ public class SagaHandler {
 
         // 对接DevKit
         List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
-        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
+
+        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO;
         for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
             if("project".equals(gitlabGroupMemberDTO.getResourceType())){
                 BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
                 GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
                 gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
                 gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
+            } else {
+                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
             }
         }
 
@@ -258,13 +262,16 @@ public class SagaHandler {
 
         // 对接DevKit
         List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
-        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
+        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO;
         for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
             if("project".equals(gitlabGroupMemberDTO.getResourceType())){
                 BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
                 GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
                 gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
                 gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
+            } else {
+                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
             }
         }
 
