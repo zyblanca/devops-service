@@ -218,7 +218,7 @@ public class GitlabGroupMemberServiceImpl implements GitlabGroupMemberService {
                 if (gitlabProjectDO.getId() != null) {
                     GitlabMemberE gitlabMemberE = gitlabProjectRepository.getProjectMember(e, gitlabUserId);
                     if (gitlabMemberE == null || gitlabMemberE.getId() == null) {
-                        gitlabRepository.addMemberIntoProject(e, new MemberDTO(gitlabUserId, 30, ""));
+                        gitlabRepository.addMemberIntoProject(e, new MemberDTO(gitlabUserId, 40, ""));
                     }
                 }
             });
