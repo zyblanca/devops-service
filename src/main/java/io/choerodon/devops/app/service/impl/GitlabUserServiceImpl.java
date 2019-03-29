@@ -33,7 +33,7 @@ public class GitlabUserServiceImpl implements GitlabUserService {
     @Override
     public void createGitlabUser(GitlabUserRequestDTO gitlabUserReqDTO) {
 
-        checkGitlabUser(gitlabUserReqDTO);
+        //checkGitlabUser(gitlabUserReqDTO);
         GitlabUserE gitlabUserE = gitlabUserRepository.getUserByUserName(gitlabUserReqDTO.getUsername());
         if (gitlabUserE == null) {
             gitlabUserE = gitlabUserRepository.createGitLabUser(
@@ -56,7 +56,7 @@ public class GitlabUserServiceImpl implements GitlabUserService {
     @Override
     public void updateGitlabUser(GitlabUserRequestDTO gitlabUserReqDTO) {
 
-        checkGitlabUser(gitlabUserReqDTO);
+        //checkGitlabUser(gitlabUserReqDTO);
         UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(gitlabUserReqDTO.getExternUid()));
         if (userAttrE != null) {
 
@@ -82,7 +82,10 @@ public class GitlabUserServiceImpl implements GitlabUserService {
         }
     }
 
-
+    /**
+     * TODO 不做下划线变更
+     * @param gitlabUserRequestDTO
+     */
     private void checkGitlabUser(GitlabUserRequestDTO gitlabUserRequestDTO) {
         String userName = gitlabUserRequestDTO.getUsername();
         StringBuilder newUserName = new StringBuilder();
