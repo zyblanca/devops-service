@@ -122,6 +122,30 @@
         dav.id DESC
     </select>
 
+    <select id="selectByAppIdAndParamWithPage" resultType="io.choerodon.devops.infra.dataobject.ApplicationVersionDO">
+        SELECT
+        dav.id,
+        dav.version
+        FROM
+        devops_app_version dav
+        WHERE
+        dav.app_id = #{appId}
+        <if test="isPublish != null">
+            <if test="isPublish == true">
+                AND dav.is_publish = TRUE
+            </if>
+            <if test="isPublish != true">
+                AND ( is_publish != TRUE OR is_publish IS NULL )
+            </if>
+        </if>
+        <if test="version != null">
+            AND
+            dav.version LIKE CONCAT(CONCAT('%', #{version, jdbcType=VARCHAR}),'%')
+        </if>
+        ORDER BY
+        dav.id DESC
+    </select>
+
     <select id="selectDeployedByAppId" resultType="io.choerodon.devops.infra.dataobject.ApplicationVersionDO">
         SELECT DISTINCT
         dav.id,
@@ -230,5 +254,21 @@
         and dav.version LIKE CONCAT(CONCAT('%', #{branch, jdbcType=VARCHAR}),'%')
     </select>
 
+    <select id="queryValueById" resultType="java.lang.String">
+        SELECT
+        davv.value
+        FROM
+        devops_app_version dav
+        LEFT JOIN devops_app_version_value davv
+        ON davv.id = dav.value_id
+        WHERE
+        dav.app_id = #{appId}
+        ORDER BY dav.id DESC
+        LIMIT 1
+    </select>
+
+    <update id="updateRepository">
+     update devops_app_version set repository = CONCAT(#{helmUrl},repository);
+    </update>
 
 </mapper>

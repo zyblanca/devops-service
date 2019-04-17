@@ -1,7 +1,11 @@
 package io.choerodon.devops
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.choerodon.core.exception.CommonException
 import io.choerodon.core.oauth.CustomUserDetails
+import io.choerodon.devops.app.service.ApplicationService
+import io.choerodon.devops.app.service.ProjectConfigHarborService
+import io.choerodon.devops.domain.application.repository.IamRepository
 import io.choerodon.devops.infra.common.util.EnvUtil
 import io.choerodon.devops.infra.common.util.GitUtil
 import io.choerodon.liquibase.LiquibaseConfig
@@ -89,6 +93,12 @@ class IntegrationTestConfiguration extends WebSecurityConfigurerAdapter {
         detachedMockFactory.Mock(CommandSender)
     }
 
+    @Bean("mockProjectConfigHarborService")
+    @Primary
+    ProjectConfigHarborService ProjectConfigHarborService() {
+        detachedMockFactory.Mock(ProjectConfigHarborService)
+    }
+
     @PostConstruct
     void init() {
         liquibaseExecutor.execute(new String()[])
@@ -131,7 +141,7 @@ class IntegrationTestConfiguration extends WebSecurityConfigurerAdapter {
         try {
             jwtToken = 'Bearer ' + JwtHelper.encode(objectMapper.writeValueAsString(defaultUserDetails), signer).getEncoded()
         } catch (IOException e) {
-            e.printStackTrace()
+            throw new CommonException(e)
         }
         return jwtToken
     }

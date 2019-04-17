@@ -11,6 +11,7 @@ public class ApplicationRepDTO {
     private String code;
     private Long projectId;
     private Long applicationTemplateId;
+    private Long gitlabProjectId;
     private String repoUrl;
     private Boolean isSynchro;
     private Boolean isActive;
@@ -21,6 +22,9 @@ public class ApplicationRepDTO {
     private Boolean isFail;
     private String type;
     private Boolean permission;
+    private Long objectVersionNumber;
+    private Long harborConfigId;
+    private Long chartConfigId;
 
     public Long getId() {
         return id;
@@ -140,5 +144,37 @@ public class ApplicationRepDTO {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Long getObjectVersionNumber() {
+        return objectVersionNumber;
+    }
+
+    public void setObjectVersionNumber(Long objectVersionNumber) {
+        this.objectVersionNumber = objectVersionNumber;
+    }
+
+    public Long getHarborConfigId() {
+        return harborConfigId;
+    }
+
+    public void setHarborConfigId(Long harborConfigId) {
+        this.harborConfigId = harborConfigId;
+    }
+
+    public Long getChartConfigId() {
+        return chartConfigId;
+    }
+
+    public void setChartConfigId(Long chartConfigId) {
+        this.chartConfigId = chartConfigId;
+    }
+
+    public Long getGitlabProjectId() {
+        return gitlabProjectId;
+    }
+
+    public void setGitlabProjectId(Long gitlabProjectId) {
+        this.gitlabProjectId = gitlabProjectId;
     }
 }

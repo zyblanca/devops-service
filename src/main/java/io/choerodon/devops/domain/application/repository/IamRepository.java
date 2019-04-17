@@ -9,6 +9,7 @@ import io.choerodon.devops.api.dto.iam.UserDTO;
 import io.choerodon.devops.api.dto.iam.UserWithRoleDTO;
 import io.choerodon.devops.domain.application.entity.ProjectE;
 import io.choerodon.devops.domain.application.entity.iam.UserE;
+import io.choerodon.devops.domain.application.event.IamAppPayLoad;
 import io.choerodon.devops.domain.application.valueobject.Organization;
 import io.choerodon.devops.infra.dataobject.iam.ProjectDO;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
@@ -25,8 +26,6 @@ public interface IamRepository {
     Organization queryOrganizationById(Long organizationId);
 
     UserE queryByLoginName(String userName);
-
-    UserE queryById(Long id);
 
     List<ProjectE> listIamProjectByOrgId(Long organizationId, String name, String[] params);
 
@@ -51,4 +50,10 @@ public interface IamRepository {
     List<Long> getAllMemberIdsWithoutOwner(Long projectId);
 
     Boolean isProjectOwner(Long userId, ProjectE projectE);
+
+    IamAppPayLoad createIamApp(Long organizationId, IamAppPayLoad iamAppPayLoad);
+
+    IamAppPayLoad updateIamApp(Long organizationId, Long id, IamAppPayLoad iamAppPayLoad);
+
+    IamAppPayLoad queryIamAppByCode(Long organizationId, String code);
 }

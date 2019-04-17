@@ -3,6 +3,7 @@ package io.choerodon.devops.infra.persistence.impl;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
 import io.kubernetes.client.JSON;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import io.choerodon.devops.infra.mapper.ApplicationVersionMapper;
 import io.choerodon.devops.infra.mapper.ApplicationVersionReadmeMapper;
 import io.choerodon.mybatis.pagehelper.PageHelper;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
+import org.springframework.util.Assert;
 
 /**
  * Created by Zenger on 2018/4/3.
@@ -34,6 +36,7 @@ public class ApplicationVersionRepositoryImpl implements ApplicationVersionRepos
     private static final String APP_CODE = "appCode";
     private static final String APP_NAME = "appName";
     private static JSON json = new JSON();
+    private static final Gson gson = new Gson();
 
     @Autowired
     private ApplicationVersionMapper applicationVersionMapper;
@@ -61,7 +64,7 @@ public class ApplicationVersionRepositoryImpl implements ApplicationVersionRepos
         if (applicationVersionMapper.insert(applicationVersionDO) != 1) {
             throw new CommonException("error.version.insert");
         }
-        return ConvertHelper.convert(applicationVersionDO, ApplicationVersionE.class);
+        return ConvertHelper.convert(applicationVersionMapper.selectOne(applicationVersionDO), ApplicationVersionE.class);
     }
 
     @Override
@@ -71,6 +74,24 @@ public class ApplicationVersionRepositoryImpl implements ApplicationVersionRepos
             return Collections.emptyList();
         }
         return ConvertHelper.convertList(applicationVersionDOS, ApplicationVersionE.class);
+    }
+
+    @Override
+    public Page<ApplicationVersionE> listByAppIdAndParamWithPage(Long appId, Boolean isPublish, Long appVersionId, PageRequest pageRequest, String searchParam) {
+        Page<ApplicationVersionDO> applicationVersionDOPage;
+        applicationVersionDOPage = PageHelper.doPageAndSort(pageRequest,
+                () -> applicationVersionMapper.selectByAppIdAndParamWithPage(appId, isPublish, searchParam));
+        if (appVersionId != null) {
+            ApplicationVersionDO versionDO = new ApplicationVersionDO();
+            versionDO.setId(appVersionId);
+            ApplicationVersionDO searchDO = applicationVersionMapper.selectByPrimaryKey(versionDO);
+            applicationVersionDOPage.getContent().removeIf(v->v.getId().equals(appVersionId));
+            applicationVersionDOPage.getContent().add(0, searchDO);
+        }
+        if (applicationVersionDOPage.isEmpty()) {
+            return new Page<>();
+        }
+        return ConvertPageHelper.convertPage(applicationVersionDOPage, ApplicationVersionE.class);
     }
 
     @Override
@@ -249,5 +270,18 @@ public class ApplicationVersionRepositoryImpl implements ApplicationVersionRepos
     @Override
     public String queryByPipelineId(Long pipelineId, String branch) {
         return applicationVersionMapper.queryByPipelineId(pipelineId, branch);
+    }
+
+    @Override
+    public String queryValueById(Long appId) {
+        return applicationVersionMapper.queryValueById(appId);
+    }
+
+    @Override
+    public ApplicationVersionE queryByAppAndCode(Long appId, String appVersion) {
+        ApplicationVersionDO applicationVersionDO = new ApplicationVersionDO();
+        applicationVersionDO.setAppId(appId);
+        applicationVersionDO.setVersion(appVersion);
+        return ConvertHelper.convert(applicationVersionMapper.selectOne(applicationVersionDO),ApplicationVersionE.class);
     }
 }

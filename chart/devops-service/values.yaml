@@ -5,12 +5,12 @@
 replicaCount: 1
 
 image:
-  repository: registry.devops.crc.com.cn/choerodon-devops/devops-service
+  repository: registry.cn-hangzhou.aliyuncs.com/choerodon-devops/devops-service
   pullPolicy: Always
 
 preJob:
   timeout: 1200
-  image: registry.devops.crc.com.cn/choerodon-tools/dbtool:0.6.1
+  image: registry.cn-hangzhou.aliyuncs.com/choerodon-tools/dbtool:0.6.1
   preConfig:
     enable: true
     configFile: application.yml

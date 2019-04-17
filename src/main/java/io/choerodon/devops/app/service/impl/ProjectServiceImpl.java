@@ -42,9 +42,4 @@ public class ProjectServiceImpl implements ProjectService {
         GitlabGroupE gitlabGroupE =  devopsProjectRepository.queryDevopsProject(projectId);
         return gitlabGroupE.getDevopsAppGroupId() != null ;
     }
-
-    @Override
-    public GitlabGroupE queryDevopsProject(Long projectId) {
-        return devopsProjectRepository.queryDevopsProject(projectId);
-    }
 }

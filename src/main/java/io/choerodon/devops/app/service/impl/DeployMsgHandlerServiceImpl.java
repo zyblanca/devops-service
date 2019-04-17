@@ -145,6 +145,8 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
     private ClusterNodeInfoService clusterNodeInfoService;
     @Autowired
     private DevopsConfigMapService devopsConfigMapService;
+    @Autowired
+    private DevopsRegistrySecretRepository devopsRegistrySecretRepository;
 
 
     public void handlerUpdatePodMessage(String key, String msg, Long envId) {
@@ -1089,12 +1091,15 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
         if (agentSyncCommit != null && agentSyncCommit.getCommitSha().equals(gitOpsSync.getMetadata().getCommit())) {
             return;
         }
+        logger.info("大佬:" + gitOpsSync.getMetadata().getCommit());
         DevopsEnvCommitE devopsEnvCommitE = devopsEnvCommitRepository.queryByEnvIdAndCommit(envId, gitOpsSync.getMetadata().getCommit());
         if (devopsEnvCommitE == null) {
             return;
         }
+        logger.info("你好:" + gitOpsSync.getMetadata().getCommit());
         devopsEnvironmentE.setAgentSyncCommit(devopsEnvCommitE.getId());
-        devopsEnvironmentRepository.updateEnvCommit(devopsEnvironmentE);
+        devopsEnvironmentRepository.updateAgentSyncEnvCommit(devopsEnvironmentE);
+        logger.info("成功:" + gitOpsSync.getMetadata().getCommit());
         if (gitOpsSync.getResourceIDs() == null) {
             return;
         }
@@ -1783,7 +1788,7 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
                     certManagerUrl,
                     "cert-manager",
                     "0.1.0",
-                    null, "choerodon-cert-manager");
+                    null, "choerodon-cert-manager",null);
             msg.setKey(String.format("cluster:%d.release:%s",
                     clusterId,
                     "choerodon-cert-manager"));
@@ -1948,5 +1953,22 @@ public class DeployMsgHandlerServiceImpl implements DeployMsgHandlerService {
             devopsConfigMapService.createOrUpdate(devopsEnvironmentE.getProjectE().getId(), true, devopsConfigMapDTO);
         }
     }
+
+    @Override
+    public void operateDockerRegistrySecretResp(String key, String result, Long clusterId) {
+        Long envId = getEnvId(key, clusterId);
+        if (envId == null) {
+            logger.info(ENV_NOT_EXIST, KeyParseTool.getNamespace(key));
+            return;
+        }
+        DevopsRegistrySecretE devopsRegistrySecretE = devopsRegistrySecretRepository.queryByName(envId, KeyParseTool.getResourceName(key));
+        if (result.equals("failed")) {
+            devopsRegistrySecretE.setStatus(false);
+        } else {
+            devopsRegistrySecretE.setStatus(true);
+        }
+        devopsRegistrySecretRepository.update(devopsRegistrySecretE);
+    }
+
 }
 

@@ -1,28 +1,41 @@
 package io.choerodon.devops.api.eventhandler;
 
-import java.io.IOException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import io.choerodon.devops.domain.application.entity.*;
-import io.choerodon.devops.domain.application.event.*;
-import io.choerodon.devops.domain.application.repository.*;
-import io.choerodon.devops.domain.application.valueobject.Organization;
-import io.choerodon.devops.infra.common.util.TypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import io.choerodon.asgard.saga.SagaDefinition;
 import io.choerodon.asgard.saga.annotation.SagaTask;
+import io.choerodon.devops.api.dto.ApplicationDeployDTO;
+import io.choerodon.devops.api.dto.ApplicationInstanceDTO;
 import io.choerodon.devops.api.dto.PipelineWebHookDTO;
 import io.choerodon.devops.api.dto.PushWebHookDTO;
-import io.choerodon.devops.app.service.*;
+import io.choerodon.devops.app.service.ApplicationInstanceService;
+import io.choerodon.devops.app.service.ApplicationService;
+import io.choerodon.devops.app.service.ApplicationTemplateService;
+import io.choerodon.devops.app.service.DevopsEnvironmentService;
+import io.choerodon.devops.app.service.DevopsGitService;
+import io.choerodon.devops.app.service.DevopsGitlabPipelineService;
+import io.choerodon.devops.domain.application.entity.ApplicationE;
+import io.choerodon.devops.domain.application.entity.ApplicationTemplateE;
+import io.choerodon.devops.domain.application.entity.DevopsAutoDeployRecordE;
+import io.choerodon.devops.domain.application.entity.DevopsEnvironmentE;
+import io.choerodon.devops.domain.application.event.DevOpsAppImportPayload;
+import io.choerodon.devops.domain.application.event.DevOpsAppPayload;
+import io.choerodon.devops.domain.application.event.DevOpsUserPayload;
+import io.choerodon.devops.domain.application.event.GitlabProjectPayload;
+import io.choerodon.devops.domain.application.repository.ApplicationRepository;
+import io.choerodon.devops.domain.application.repository.ApplicationTemplateRepository;
+import io.choerodon.devops.domain.application.repository.DevopsAutoDeployRecordRepository;
+import io.choerodon.devops.domain.application.repository.DevopsAutoDeployRepository;
+import io.choerodon.devops.domain.application.repository.DevopsEnvironmentRepository;
+import io.choerodon.devops.domain.application.repository.GitlabRepository;
 import io.choerodon.devops.domain.service.UpdateUserPermissionService;
 import io.choerodon.devops.domain.service.impl.UpdateAppUserPermissionServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 /**
  * Creator: Runge
@@ -34,6 +47,8 @@ import io.choerodon.devops.domain.service.impl.UpdateAppUserPermissionServiceImp
 public class DevopsSagaHandler {
     private static final String TEMPLATE = "template";
     private static final String APPLICATION = "application";
+    private static final String STATUS_FIN = "finished";
+    private static final String STATUS_FAILED = "failed";
     private static final Logger LOGGER = LoggerFactory.getLogger(DevopsSagaHandler.class);
 
     private final Gson gson = new Gson();
@@ -47,16 +62,10 @@ public class DevopsSagaHandler {
     private final ApplicationRepository applicationRepository;
     private final ApplicationTemplateRepository applicationTemplateRepository;
     private final DevopsEnvironmentRepository devopsEnvironmentRepository;
-
-
-    @Value("${services.gitlab.url}")
-    private String gitlabUrl;
-
-    @Autowired
-    private IamRepository iamRepository;
-
-    @Autowired
-    private UserAttrRepository userAttrRepository;
+    private final DevopsAutoDeployRecordRepository devopsAutoDeployRecordRepository;
+    private final DevopsAutoDeployRepository devopsAutoDeployRepository;
+    private final ApplicationInstanceService applicationInstanceService;
+    private final GitlabRepository gitlabRepository;
 
     @Autowired
     public DevopsSagaHandler(DevopsEnvironmentService devopsEnvironmentService,
@@ -66,7 +75,11 @@ public class DevopsSagaHandler {
                              DevopsGitlabPipelineService devopsGitlabPipelineService,
                              ApplicationRepository applicationRepository,
                              ApplicationTemplateRepository applicationTemplateRepository,
-                             DevopsEnvironmentRepository devopsEnvironmentRepository) {
+                             DevopsEnvironmentRepository devopsEnvironmentRepository,
+                             DevopsAutoDeployRecordRepository devopsAutoDeployRecordRepository,
+                             DevopsAutoDeployRepository devopsAutoDeployRepository,
+                             GitlabRepository gitlabRepository,
+                             ApplicationInstanceService applicationInstanceService) {
         this.devopsEnvironmentService = devopsEnvironmentService;
         this.devopsGitService = devopsGitService;
         this.applicationTemplateService = applicationTemplateService;
@@ -75,6 +88,10 @@ public class DevopsSagaHandler {
         this.applicationRepository = applicationRepository;
         this.applicationTemplateRepository = applicationTemplateRepository;
         this.devopsEnvironmentRepository = devopsEnvironmentRepository;
+        this.devopsAutoDeployRecordRepository = devopsAutoDeployRecordRepository;
+        this.devopsAutoDeployRepository = devopsAutoDeployRepository;
+        this.gitlabRepository = gitlabRepository;
+        this.applicationInstanceService = applicationInstanceService;
     }
 
     /**
@@ -150,9 +167,6 @@ public class DevopsSagaHandler {
             seq = 1)
     public String createApp(String data) {
         DevOpsAppPayload devOpsAppPayload = gson.fromJson(data, DevOpsAppPayload.class);
-
-        DevOpsAppPayloadDevKit devOpsAppPayloadDevKit       = gson.fromJson(data, DevOpsAppPayloadDevKit.class);
-
         if (devOpsAppPayload.getType().equals(APPLICATION)) {
             try {
                 applicationService.operationApplication(devOpsAppPayload);
@@ -160,47 +174,7 @@ public class DevopsSagaHandler {
                 applicationService.setAppErrStatus(data, devOpsAppPayload.getIamProjectId());
                 throw e;
             }
-            ApplicationE applicationE = applicationRepository.query(devOpsAppPayload.getAppId());
-            if (applicationE.getFailed() != null && applicationE.getFailed()) {
-                applicationE.setFailed(false);
-                if (1 != applicationRepository.update(applicationE)) {
-                    LOGGER.error("update application set create success status error");
-                }
-            }
-
-            //===== 对接DevKit,创建新应用通知到DevKit =====
-            BeanUtils.copyProperties(devOpsAppPayload, devOpsAppPayloadDevKit);
-            // 新应用名称
-            devOpsAppPayloadDevKit.setItemName(applicationE.getName());
-
-            // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
-            String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
-            LOGGER.error("=============== Begin =================");
-            ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
-            LOGGER.error("项目编码:" + projectE.getCode());
-            Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
-            LOGGER.error("组织编码:" + organization.getCode());
-            devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
-
-            // 新应用用户名称
-            UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppPayload.getUserId()));
-            String    loginName = iamRepository.queryById(userAttrE.getIamUserId()).getLoginName();
-
-
-            LOGGER.error("用户名称:" + loginName);
-            devOpsAppPayloadDevKit.setUserLogin(loginName);
-
-            // Gitlab的Token
-            devOpsAppPayloadDevKit.setToken(applicationE.getToken());
-
-            LOGGER.error("=============== End =================");
-
         }
-
-        data = gson.toJson(devOpsAppPayloadDevKit);
-        LOGGER.error("data:" + data);
-        //===== 对接DevKit,创建新应用通知到DevKit =====
-
         return data;
     }
 
@@ -228,39 +202,9 @@ public class DevopsSagaHandler {
                     LOGGER.error("update application set create success status error");
                 }
             }
-
-            //===== 对接DevKit,创建新应用通知到DevKit =====
-            DevOpsAppImportPayloadDevKit devOpsAppImportPayloadDevKit = new DevOpsAppImportPayloadDevKit();
-
-            BeanUtils.copyProperties(devOpsAppImportPayload, devOpsAppImportPayloadDevKit);
-            // 新应用名称
-            devOpsAppImportPayloadDevKit.setItemName(applicationE.getName());
-
-            // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
-            String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
-            LOGGER.error("=============== Begin =================");
-            ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
-            LOGGER.error("项目编码:" + projectE.getCode());
-            Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
-            LOGGER.error("组织编码:" + organization.getCode());
-            devOpsAppImportPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
-
-            // 新应用用户名称
-            UserAttrE userAttrE = userAttrRepository.queryByGitlabUserId(TypeUtil.objToLong(devOpsAppImportPayload.getUserId()));
-            String    loginName = iamRepository.queryById(userAttrE.getIamUserId()).getLoginName();
-            LOGGER.error("用户名称:" + loginName);
-            devOpsAppImportPayloadDevKit.setUserLogin(loginName);
-
-            // 新应用的组织编码
-            devOpsAppImportPayloadDevKit.setOrganizationCode(organization.getCode());
-
-            // Gitlab的Token
-            devOpsAppImportPayloadDevKit.setToken(applicationE.getToken());
-
-            data = gson.toJson(devOpsAppImportPayloadDevKit);
-            LOGGER.error("data:" + data);
+//            gitlabRepository.batchAddVariable(applicationE.getGitlabProjectE().getId(), TypeUtil.objToInteger(devOpsAppImportPayload.getGitlabUserId()),
+//                    applicationService.setVariableDTO(applicationE.getHarborConfigE().getId(),applicationE.getChartConfigE().getId()));
         }
-
         return data;
     }
 
@@ -274,13 +218,6 @@ public class DevopsSagaHandler {
             seq = 1)
     public String updateGitlabUser(String data) {
         DevOpsUserPayload devOpsUserPayload = gson.fromJson(data, DevOpsUserPayload.class);
-
-        // 如果仅修改应用名称就不需要更新权限
-        DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = gson.fromJson(data, DevOpsUserPayloadDevKit.class);
-        if(devOpsUserPayloadDevKit.getOnlyModifyApplication()){
-            return data;
-        }
-
         try {
             UpdateUserPermissionService updateUserPermissionService = new UpdateAppUserPermissionServiceImpl();
             updateUserPermissionService
@@ -374,4 +311,32 @@ public class DevopsSagaHandler {
         devopsGitlabPipelineService.handleCreate(pipelineWebHookDTO);
         return data;
     }
+
+    @SagaTask(code = "devops-auto-deploy-create-instance",
+            description = "devops create auto deploy instance",
+            sagaCode = "devops-create-auto-deploy-instance",
+            concurrentLimitPolicy = SagaDefinition.ConcurrentLimitPolicy.TYPE_AND_ID,
+            maxRetryCount = 3,
+            seq = 1)
+    public void createAutoDeployInstance(String data) {
+        //创建或更新实例
+        ApplicationDeployDTO applicationDeployDTO = gson.fromJson(data, ApplicationDeployDTO.class);
+        try {
+            ApplicationInstanceDTO applicationInstanceDTO = applicationInstanceService.createOrUpdate(applicationDeployDTO);
+            //更新记录表中的实例
+            DevopsAutoDeployRecordE devopsAutoDeployRecordE = new DevopsAutoDeployRecordE(applicationDeployDTO.getRecordId(), STATUS_FIN,
+                    applicationDeployDTO.getInstanceName(), applicationInstanceDTO.getId());
+            devopsAutoDeployRecordRepository.createOrUpdate(devopsAutoDeployRecordE);
+            if (devopsAutoDeployRepository.queryById(applicationDeployDTO.getAutoDeployId()).getInstanceId() == null) {
+                devopsAutoDeployRepository.updateInstanceId(applicationDeployDTO.getAutoDeployId(), applicationInstanceDTO.getId());
+            }
+        } catch (Exception e) {
+            //实例创建失败,回写记录表
+            DevopsAutoDeployRecordE devopsAutoDeployRecordE = new DevopsAutoDeployRecordE(applicationDeployDTO.getRecordId(), STATUS_FAILED,
+                    null, null);
+            devopsAutoDeployRecordRepository.createOrUpdate(devopsAutoDeployRecordE);
+            LOGGER.error("error create auto deploy instance {}", e.getMessage());
+        }
+    }
+
 }

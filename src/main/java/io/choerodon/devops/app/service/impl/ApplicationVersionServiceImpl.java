@@ -3,32 +3,34 @@ package io.choerodon.devops.app.service.impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import io.choerodon.devops.domain.application.handler.DevopsCiInvalidException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
+import com.google.gson.Gson;
+import io.choerodon.asgard.saga.annotation.Saga;
+import io.choerodon.asgard.saga.dto.StartInstanceDTO;
+import io.choerodon.asgard.saga.feign.SagaClient;
 import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.core.convertor.ConvertPageHelper;
 import io.choerodon.core.domain.Page;
 import io.choerodon.core.exception.CommonException;
+import io.choerodon.core.iam.ResourceLevel;
 import io.choerodon.devops.api.dto.*;
 import io.choerodon.devops.app.service.ApplicationVersionService;
 import io.choerodon.devops.domain.application.entity.*;
 import io.choerodon.devops.domain.application.entity.iam.UserE;
+import io.choerodon.devops.domain.application.handler.DevopsCiInvalidException;
 import io.choerodon.devops.domain.application.repository.*;
 import io.choerodon.devops.domain.application.valueobject.Organization;
+import io.choerodon.devops.infra.common.util.CutomerContextUtil;
 import io.choerodon.devops.infra.common.util.FileUtil;
 import io.choerodon.devops.infra.common.util.GitUserNameUtil;
 import io.choerodon.devops.infra.common.util.TypeUtil;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Created by Zenger on 2018/4/3.
@@ -36,7 +38,13 @@ import io.choerodon.mybatis.pagehelper.domain.PageRequest;
 @Service
 public class ApplicationVersionServiceImpl implements ApplicationVersionService {
 
+    private static final String CREATE = "create";
+    private static final String UPDATE = "update";
+    private static final String STATUS_RUN = "running";
+    private static final String STATUS_FAILED = "failed";
     private static final String DESTPATH = "devops";
+    private static final String STOREPATH = "stores";
+    private static final String[] TYPE = {"feature", "bugfix", "release", "hotfix", "custom", "master"};
     @Value("${services.gitlab.url}")
     private String gitlabUrl;
     @Autowired
@@ -57,9 +65,19 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
     private UserAttrRepository userAttrRepository;
     @Autowired
     private DevopsGitlabCommitRepository devopsGitlabCommitRepository;
+    @Autowired
+    private DevopsAutoDeployRepository devopsAutoDeployRepository;
+    @Autowired
+    private DevopsAutoDeployRecordRepository devopsAutoDeployRecordRepository;
+    @Autowired
+    private SagaClient sagaClient;
+    @Autowired
+    private DevopsProjectConfigRepository devopsProjectConfigRepository;
 
     @Value("${services.helm.url}")
     private String helmUrl;
+
+    private Gson gson = new Gson();
 
     /**
      * 方法中抛出runtime Exception而不是CommonException是为了返回非200的状态码。
@@ -72,7 +90,7 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
             if (e instanceof CommonException) {
                 throw new DevopsCiInvalidException(((CommonException) e).getCode(), e.getCause());
             }
-            throw new DevopsCiInvalidException(e.getMessage());
+            throw new DevopsCiInvalidException(e.getMessage(), e);
         }
     }
 
@@ -89,17 +107,18 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
         applicationVersionE.setImage(image);
         applicationVersionE.setCommit(commit);
         applicationVersionE.setVersion(version);
-        applicationVersionE.setRepository("/" + organization.getCode() + "/" + projectE.getCode() + "/");
-        String classPath = String.format("Charts%s%s%s%s",
-                System.getProperty("file.separator"),
-                organization.getCode(),
-                System.getProperty("file.separator"),
-                projectE.getCode());
-        String path = FileUtil.multipartFileToFile(classPath, files);
+        if (applicationE.getChartConfigE() != null) {
+            DevopsProjectConfigE devopsProjectConfigE = devopsProjectConfigRepository.queryByPrimaryKey(applicationE.getChartConfigE().getId());
+            helmUrl = devopsProjectConfigE.getConfig().getUrl();
+        }
+
+        applicationVersionE.setRepository(helmUrl.endsWith("/") ? helmUrl : helmUrl + "/" + organization.getCode() + "/" + projectE.getCode() + "/");
+        String storeFilePath = STOREPATH + version;
         if (newApplicationVersionE != null) {
             return;
         }
         String destFilePath = DESTPATH + version;
+        String path = FileUtil.multipartFileToFile(storeFilePath, files);
         FileUtil.unTarGZ(path, destFilePath);
         String values;
         try (FileInputStream fis = new FileInputStream(new File(Objects.requireNonNull(FileUtil.queryFileFromFiles(
@@ -122,14 +141,56 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
             throw new CommonException("error.version.insert", e);
         }
         applicationVersionE.initApplicationVersionReadmeV(FileUtil.getReadme(destFilePath));
-        applicationVersionRepository.create(applicationVersionE);
+        applicationVersionE = applicationVersionRepository.create(applicationVersionE);
         FileUtil.deleteDirectory(new File(destFilePath));
+        FileUtil.deleteDirectory(new File(storeFilePath));
+        triggerAutoDelpoy(applicationVersionE);
+    }
+
+    /**
+     * 根据appId触发自动部署
+     *
+     * @param applicationVersionE
+     */
+    public void triggerAutoDelpoy(ApplicationVersionE applicationVersionE) {
+        Optional<String> branch = Arrays.asList(TYPE).stream().filter(t -> applicationVersionE.getVersion().contains(t)).findFirst();
+        String version = branch.isPresent() && !branch.get().isEmpty() ? branch.get() : null;
+        List<DevopsAutoDeployE> autoDeployES = devopsAutoDeployRepository.queryByVersion(applicationVersionE.getApplicationE().getId(), version);
+        autoDeployES.stream().forEach(t -> createAutoDeployInstance(t, applicationVersionE));
+    }
+
+    @Saga(code = "devops-create-auto-deploy-instance",
+            description = "创建自动部署实例", inputSchema = "{}")
+    private void createAutoDeployInstance(DevopsAutoDeployE devopsAutoDeployE, ApplicationVersionE applicationVersionE) {
+        CutomerContextUtil.setUserId(devopsAutoDeployE.getCreatedBy());
+        DevopsAutoDeployRecordE devopsAutoDeployRecordE = new DevopsAutoDeployRecordE(devopsAutoDeployE.getId(), devopsAutoDeployE.getTaskName(), STATUS_RUN,
+                devopsAutoDeployE.getEnvId(), devopsAutoDeployE.getAppId(), applicationVersionE.getId(), null, devopsAutoDeployE.getProjectId());
+        devopsAutoDeployRecordE = devopsAutoDeployRecordRepository.createOrUpdate(devopsAutoDeployRecordE);
+        try {
+            String type = devopsAutoDeployE.getInstanceId() == null ? CREATE : UPDATE;
+            ApplicationDeployDTO applicationDeployDTO = new ApplicationDeployDTO(applicationVersionE.getId(), devopsAutoDeployE.getEnvId(),
+                    devopsAutoDeployE.getValue(), devopsAutoDeployE.getAppId(), type, devopsAutoDeployE.getInstanceId(),
+                    devopsAutoDeployE.getInstanceName(), devopsAutoDeployRecordE.getId(), devopsAutoDeployE.getId());
+            String input = gson.toJson(applicationDeployDTO);
+            sagaClient.startSaga("devops-create-auto-deploy-instance", new StartInstanceDTO(input, "env", devopsAutoDeployE.getEnvId().toString(), ResourceLevel.PROJECT.value(), devopsAutoDeployE.getProjectId()));
+        } catch (Exception e) {
+            devopsAutoDeployRecordE.setStatus(STATUS_FAILED);
+            devopsAutoDeployRecordRepository.createOrUpdate(devopsAutoDeployRecordE);
+            throw new CommonException("create.auto.deploy.instance.error", e);
+        }
+
     }
 
     @Override
     public List<ApplicationVersionRepDTO> listByAppId(Long appId, Boolean isPublish) {
         return ConvertHelper.convertList(
                 applicationVersionRepository.listByAppId(appId, isPublish), ApplicationVersionRepDTO.class);
+    }
+
+    @Override
+    public Page<ApplicationVersionRepDTO> listByAppIdAndParamWithPage(Long appId, Boolean isPublish, Long appVersionId, PageRequest pageRequest, String searchParam) {
+        return ConvertPageHelper.convertPage(
+                applicationVersionRepository.listByAppIdAndParamWithPage(appId, isPublish, appVersionId, pageRequest, searchParam), ApplicationVersionRepDTO.class);
     }
 
     @Override
@@ -251,6 +312,16 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
     @Override
     public Boolean queryByPipelineId(Long pipelineId, String branch) {
         return applicationVersionRepository.queryByPipelineId(pipelineId, branch) != null;
+    }
+
+    @Override
+    public String queryValueById(Long projectId, Long appId) {
+        return applicationVersionRepository.queryValueById(appId);
+    }
+
+    @Override
+    public ApplicationVersionRepDTO queryByAppAndVersion(Long appId, String version) {
+        return ConvertHelper.convert(applicationVersionRepository.queryByAppAndCode(appId, version), ApplicationVersionRepDTO.class);
     }
 
 

@@ -23,15 +23,14 @@ import io.choerodon.asgard.saga.dto.StartInstanceDTO;
 import io.choerodon.asgard.saga.feign.SagaClient;
 import io.choerodon.core.domain.Page;
 import io.choerodon.core.iam.ResourceLevel;
+import io.choerodon.devops.api.dto.gitlab.MemberDTO;
 import io.choerodon.devops.api.dto.iam.UserWithRoleDTO;
-import io.choerodon.devops.app.service.ApplicationInstanceService;
-import io.choerodon.devops.app.service.DevopsCheckLogService;
-import io.choerodon.devops.app.service.DevopsEnvironmentService;
-import io.choerodon.devops.app.service.DevopsIngressService;
+import io.choerodon.devops.app.service.*;
 import io.choerodon.devops.domain.application.entity.*;
 import io.choerodon.devops.domain.application.entity.gitlab.*;
 import io.choerodon.devops.domain.application.entity.iam.UserE;
 import io.choerodon.devops.domain.application.event.GitlabProjectPayload;
+import io.choerodon.devops.domain.application.event.IamAppPayLoad;
 import io.choerodon.devops.domain.application.repository.*;
 import io.choerodon.devops.domain.application.valueobject.*;
 import io.choerodon.devops.infra.common.util.*;
@@ -76,7 +75,12 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
     private static final String SUCCESS = "success";
     private static final String FAILED = "failed: ";
     private static final String SERIAL_STRING = " serializable to yaml";
+    private static final String APPLICATION = "application";
+    private static final String ERROR_UPDATE_APP = "error.application.update";
+    private static final String DEVELOPMENT = "development-application";
+    private static final String TEST = "test-application";
     private static final String YAML_FILE = ".yaml";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DevopsCheckLogServiceImpl.class);
     private static final ExecutorService executorService = new ThreadPoolExecutor(0, 1,
             0L, TimeUnit.MILLISECONDS,
@@ -92,6 +96,8 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
 
     @Autowired
     private ApplicationMapper applicationMapper;
+    @Autowired
+    private DevopsEnvironmentMapper devopsEnvironmentMapper;
     @Autowired
     private GitlabRepository gitlabRepository;
     @Autowired
@@ -154,6 +160,12 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
     private GitUtil gitUtil;
     @Autowired
     private EnvUtil envUtil;
+    @Autowired
+    private ApplicationVersionMapper applicationVersionMapper;
+    @Autowired
+    private DevopsProjectConfigRepository devopsProjectConfigRepository;
+    @Autowired
+    private ApplicationService applicationService;
 
     @Override
     public void checkLog(String version) {
@@ -503,7 +515,7 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
             ApplicationE applicationE = applicationRepository.query(applicationInstanceE.getApplicationE().getId());
             C7nHelmRelease c7nHelmRelease = new C7nHelmRelease();
             c7nHelmRelease.getMetadata().setName(applicationInstanceE.getCode());
-            c7nHelmRelease.getSpec().setRepoUrl(helmUrl + applicationVersionE.getRepository());
+            c7nHelmRelease.getSpec().setRepoUrl(applicationVersionE.getRepository());
             c7nHelmRelease.getSpec().setChartName(applicationE.getCode());
             c7nHelmRelease.getSpec().setChartVersion(applicationVersionE.getVersion());
             c7nHelmRelease.getSpec().setValues(applicationInstanceService.getReplaceResult(
@@ -786,6 +798,10 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
                 syncCommandVersionId();
             } else if ("0.14.0".equals(version)) {
                 syncDevopsEnvPodNodeNameAndRestartCount();
+            } else if ("0.15.0".equals(version)) {
+                syncAppToIam();
+                syncAppVersion();
+                syncCiVariableAndRole(logs);
             } else {
                 LOGGER.info("version not matched");
             }
@@ -814,6 +830,73 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
             });
         }
 
+        /**
+         * 同步devops应用表数据到iam应用表数据
+         */
+        @Saga(code = "devops-sync-application",
+                description = "Devops同步应用到iam", inputSchema = "{}")
+        private void syncAppToIam() {
+            List<ApplicationDO> applicationDOS = applicationMapper.selectAll().stream().filter(applicationDO -> applicationDO.getGitlabProjectId() != null).collect(Collectors.toList());
+            List<IamAppPayLoad> iamAppPayLoads = applicationDOS.stream().map(applicationDO -> {
+                ProjectE projectE = iamRepository.queryIamProject(applicationDO.getProjectId());
+                Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+                IamAppPayLoad iamAppPayLoad = new IamAppPayLoad();
+                iamAppPayLoad.setOrganizationId(organization.getId());
+                iamAppPayLoad.setApplicationCategory(APPLICATION);
+                iamAppPayLoad.setApplicationType(applicationDO.getType());
+                iamAppPayLoad.setCode(applicationDO.getCode());
+                iamAppPayLoad.setName(applicationDO.getName());
+                iamAppPayLoad.setEnabled(true);
+                iamAppPayLoad.setProjectId(applicationDO.getProjectId());
+                return iamAppPayLoad;
+
+            }).collect(Collectors.toList());
+            String input = JSONArray.toJSONString(iamAppPayLoads);
+            sagaClient.startSaga("devops-sync-application", new StartInstanceDTO(input, "", "", "", null));
+        }
+
+        private void syncCiVariableAndRole(List<CheckLog> logs) {
+            List<Integer> gitlabProjectIds = applicationMapper.selectAll().stream()
+                    .filter(applicationDO -> applicationDO.getGitlabProjectId() != null)
+                    .map(ApplicationDO::getGitlabProjectId).collect(Collectors.toList());
+            List<Integer> envGitlabProjectIds = devopsEnvironmentMapper.selectAll().stream()
+                    .filter(environmentDO -> environmentDO.getGitlabEnvProjectId() != null)
+                    .map(t -> TypeUtil.objToInteger(t.getGitlabEnvProjectId())).collect(Collectors.toList());
+            //changRole
+            gitlabProjectIds.forEach(t -> {
+                CheckLog checkLog = new CheckLog();
+                try {
+                    checkLog.setContent("gitlabProjectId: " + t + " sync gitlab variable and role");
+                    List<MemberDTO> memberDTOS = gitlabProjectRepository.getAllMemberByProjectId(t).stream().filter(m -> m.getAccessLevel() == 40).map(memberE ->
+                            new MemberDTO(memberE.getId(), 30)).collect(Collectors.toList());
+                    if (!memberDTOS.isEmpty()) {
+                        gitlabRepository.updateMemberIntoProject(t, memberDTOS);
+                    }
+                    LOGGER.info("update project member maintainer to developer success");
+//                    gitlabRepository.batchAddVariable(t, null, applicationService.setVariableDTO(devopsProjectConfigRepository.queryByIdAndType(null, ProjectConfigType.HARBOR.getType()).get(0).getId(),
+//                            devopsProjectConfigRepository.queryByIdAndType(null, ProjectConfigType.CHART.getType()).get(0).getId()));
+//                    LOGGER.info("the project add Variable success,gitlabProjectId: " + t);
+                    checkLog.setResult(SUCCESS);
+                } catch (Exception e) {
+                    LOGGER.info("gitlab.project.is.not.exist,gitlabProjectId: " + t, e);
+                    checkLog.setResult(FAILED + e.getMessage());
+                }
+                LOGGER.info(checkLog.toString());
+                logs.add(checkLog);
+            });
+        }
+
+        private void syncAppVersion() {
+            List<ApplicationVersionDO> applicationVersionDOS = applicationVersionMapper.selectAll();
+            if (!applicationVersionDOS.isEmpty()) {
+                if (!applicationVersionDOS.get(0).getRepository().contains(helmUrl)) {
+                    if (helmUrl.endsWith("/")) {
+                        helmUrl = helmUrl.substring(0, helmUrl.length() - 1);
+                    }
+                    applicationVersionMapper.updateRepository(helmUrl);
+                }
+            }
+        }
 
         private void syncObjects(List<CheckLog> logs, Long envId) {
             List<DevopsEnvironmentE> devopsEnvironmentES;
@@ -889,7 +972,6 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
                 }
 
                 gitUtil.gitPush(git);
-
                 gitUtil.gitPushTag(git);
                 LOGGER.info("{}:{} finish to upgrade", env.getCode(), env.getId());
             } catch (IOException e) {

@@ -2,10 +2,9 @@ package io.choerodon.devops.domain.application.entity;
 
 import java.util.Date;
 
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabProjectE;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import io.choerodon.devops.domain.application.entity.gitlab.GitlabProjectE;
 
 
 /**
@@ -20,6 +19,8 @@ public class ApplicationE {
     private String code;
     private GitlabProjectE gitlabProjectE;
     private ApplicationTemplateE applicationTemplateE;
+    private DevopsProjectConfigE harborConfigE;
+    private DevopsProjectConfigE chartConfigE;
     private Boolean isActive;
     private Boolean isSynchro;
     private String groupName;
@@ -34,6 +35,7 @@ public class ApplicationE {
     private Boolean isFailed;
     private String type;
     private Boolean isSkipCheckPermission;
+    private Long objectVersionNumber;
 
     public ApplicationE() {
     }
@@ -147,7 +149,7 @@ public class ApplicationE {
     }
 
     public void initGitlabProjectEByUrl(String url) {
-        this.gitlabProjectE = new GitlabProjectE(url);
+        this.gitlabProjectE.setRepoURL(url);
     }
 
     public void initGitlabProjectE(Integer id) {
@@ -248,5 +250,29 @@ public class ApplicationE {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public Long getObjectVersionNumber() {
+        return objectVersionNumber;
+    }
+
+    public void setObjectVersionNumber(Long objectVersionNumber) {
+        this.objectVersionNumber = objectVersionNumber;
+    }
+
+    public void initHarborConfig(Long harborConfigId) {
+        this.harborConfigE = new DevopsProjectConfigE(harborConfigId);
+    }
+
+    public void initChartConfig(Long chartConfigId) {
+        this.chartConfigE =  new DevopsProjectConfigE(chartConfigId);
+    }
+
+    public DevopsProjectConfigE getHarborConfigE() {
+        return harborConfigE;
+    }
+
+    public DevopsProjectConfigE getChartConfigE() {
+        return chartConfigE;
     }
 }

@@ -209,9 +209,11 @@ public class ApplicationController {
             @PathVariable(value = "project_id") Long projectId,
             @ApiParam(value = "环境 ID", required = true)
             @RequestParam(value = "env_id") Long envId,
+            @ApiParam(value = "应用 Id")
+            @RequestParam(value = "app_id", required = false) Long appId,
             @ApiParam(value = "分页参数")
             @ApiIgnore PageRequest pageRequest) {
-        return Optional.ofNullable(applicationService.pageByEnvId(projectId, envId, pageRequest))
+        return Optional.ofNullable(applicationService.pageByEnvId(projectId, envId, appId, pageRequest))
                 .map(target -> new ResponseEntity<>(target, HttpStatus.OK))
                 .orElseThrow(() -> new CommonException("error.appName.query"));
     }
@@ -331,7 +333,6 @@ public class ApplicationController {
                 .orElseThrow(() -> new CommonException("error.application.get"));
     }
 
-
     /**
      * 查询应用模板
      *
@@ -346,7 +347,7 @@ public class ApplicationController {
             @PathVariable(value = "project_id") Long projectId,
             @ApiParam(value = "是否只查询预定义")
             @RequestParam(required = false) Boolean isPredefined) {
-        return Optional.ofNullable(applicationService.listTemplate(projectId,isPredefined))
+        return Optional.ofNullable(applicationService.listTemplate(projectId, isPredefined))
                 .map(target -> new ResponseEntity<>(target, HttpStatus.OK))
                 .orElseThrow(() -> new CommonException("error.template.get"));
     }
@@ -420,6 +421,52 @@ public class ApplicationController {
         return Optional.ofNullable(applicationService.listAllUserPermission(appId))
                 .map(target -> new ResponseEntity<>(target, HttpStatus.OK))
                 .orElseThrow(() -> new CommonException("error.app.user.permission.get"));
+    }
+
+
+    /**
+     * 校验harbor配置信息是否正确
+     *
+     * @param url      harbor地址
+     * @param userName harbor用户名
+     * @param passWord harbor密码
+     * @param project  harbor项目
+     * @param email    harbor邮箱
+     */
+    @Permission(level = ResourceLevel.PROJECT, roles = {InitRoleCode.PROJECT_OWNER})
+    @ApiOperation(value = "校验harbor配置信息是否正确")
+    @GetMapping(value = "check_harbor")
+    public void checkHarbor(
+            @ApiParam(value = "项目id", required = true)
+            @PathVariable(value = "project_id") Long projectId,
+            @ApiParam(value = "harbor地址", required = true)
+            @RequestParam String url,
+            @ApiParam(value = "harbor用户名", required = true)
+            @RequestParam String userName,
+            @ApiParam(value = "harbor密码", required = true)
+            @RequestParam String passWord,
+            @ApiParam(value = "harborProject", required = true)
+            @RequestParam String project,
+            @ApiParam(value = "harbor邮箱", required = true)
+            @RequestParam String email) {
+        applicationService.checkHarborIsUsable(url, userName, passWord, project, email);
+    }
+
+
+    /**
+     * 校验chart配置信息是否正确
+     *
+     * @param url chartmusume地址
+     */
+    @Permission(level = ResourceLevel.PROJECT, roles = {InitRoleCode.PROJECT_OWNER})
+    @ApiOperation(value = "校验chart配置信息是否正确")
+    @GetMapping(value = "check_chart")
+    public void checkChart(
+            @ApiParam(value = "项目id", required = true)
+            @PathVariable(value = "project_id") Long projectId,
+            @ApiParam(value = "chartmusume地址", required = true)
+            @RequestParam String url) {
+        applicationService.checkChartIsUsable(url);
     }
 
     /**

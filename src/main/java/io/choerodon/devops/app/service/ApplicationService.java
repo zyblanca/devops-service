@@ -4,8 +4,10 @@ import java.util.List;
 
 import io.choerodon.core.domain.Page;
 import io.choerodon.devops.api.dto.*;
+import io.choerodon.devops.api.dto.gitlab.VariableDTO;
 import io.choerodon.devops.domain.application.event.DevOpsAppImportPayload;
 import io.choerodon.devops.domain.application.event.DevOpsAppPayload;
+import io.choerodon.devops.domain.application.event.IamAppPayLoad;
 import io.choerodon.devops.infra.common.util.enums.GitPlatformType;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
 
@@ -129,7 +131,7 @@ public interface ApplicationService {
      * @param pageRequest 分页参数
      * @return list of ApplicationRepDTO
      */
-    Page<ApplicationCodeDTO> pageByEnvId(Long projectId, Long envId, PageRequest pageRequest);
+    Page<ApplicationCodeDTO> pageByEnvId(Long projectId, Long envId, Long appId, PageRequest pageRequest);
 
     /**
      * 项目下查询所有已经启用的应用
@@ -166,11 +168,11 @@ public interface ApplicationService {
     /**
      * 查询应用模板
      *
-     * @param projectId 项目ID
+     * @param projectId    项目ID
      * @param isPredefined 是否只查询预定义模板
      * @return Page
      */
-    List<ApplicationTemplateRepDTO> listTemplate(Long projectId,Boolean isPredefined);
+    List<ApplicationTemplateRepDTO> listTemplate(Long projectId, Boolean isPredefined);
 
     /**
      * 项目下查询已经启用有版本未发布的应用
@@ -205,7 +207,7 @@ public interface ApplicationService {
      *
      * @param gitPlatformType git platform type
      * @param repositoryUrl   repository url
-     * @param accessToken    access token (Nullable)
+     * @param accessToken     access token (Nullable)
      * @return true if valid
      */
     Boolean validateRepositoryUrlAndToken(GitPlatformType gitPlatformType, String repositoryUrl, String accessToken);
@@ -220,5 +222,58 @@ public interface ApplicationService {
     ApplicationRepDTO importApplicationFromGitPlatform(Long projectId, ApplicationImportDTO applicationImportDTO);
 
 
+    /**
+     * 根据应用code查询应用
+     *
+     * @param projectId 项目Id
+     * @param code      应用code
+     * @return ApplicationRepDTO
+     */
     ApplicationRepDTO queryByCode(Long projectId, String code);
+
+
+    /**
+     * 处理iam服务创建应用
+     *
+     * @param iamAppPayLoad 应用相关信息
+     */
+    void createIamApplication(IamAppPayLoad iamAppPayLoad);
+
+
+    /**
+     * 处理iam服务更新应用
+     *
+     * @param iamAppPayLoad 应用相关信息
+     */
+    void updateIamApplication(IamAppPayLoad iamAppPayLoad);
+
+
+    /**
+     * 校验harbor配置信息是否正确
+     *
+     * @param url      harbor地址
+     * @param userName harbor用户名
+     * @param password harbor密码
+     * @param project  harbor项目
+     * @param email    harbor邮箱
+     * @return Boolean
+     */
+    Boolean checkHarborIsUsable(String url, String userName, String password, String project, String email);
+
+    /**
+     * 校验chart配置信息是否正确
+     *
+     * @param url chartmusume地址
+     * @return Boolean
+     */
+    Boolean checkChartIsUsable(String url);
+
+    /**
+     * 根据配置Id查询配置并转换成VariableDTO
+     *
+     * @param harborConfigId harbor配置Id
+     * @param chartConfigId  chart配置Id
+     * @return
+     */
+    List<VariableDTO> setVariableDTO(Long harborConfigId, Long chartConfigId);
 }

@@ -3,6 +3,7 @@ package io.choerodon.devops.domain.service;
 import java.util.List;
 import java.util.Map;
 
+import io.choerodon.devops.api.dto.ProjectConfigDTO;
 import io.choerodon.devops.domain.application.entity.ApplicationE;
 import io.choerodon.devops.domain.application.entity.ApplicationVersionE;
 import io.choerodon.devops.domain.application.entity.DevopsClusterE;
@@ -16,7 +17,7 @@ public interface DeployService {
 
     void deploy(ApplicationE applicationE, ApplicationVersionE applicationVersionE,
                 String releaseName, DevopsEnvironmentE devopsEnvironmentE, String values,
-                Long commandId);
+                Long commandId, String secretCode);
 
     void initCluster(Long clusterId);
 
@@ -24,7 +25,7 @@ public interface DeployService {
 
     void initEnv(DevopsEnvironmentE devopsEnvironmentE, Long clusterId);
 
-    void deployTestApp(ApplicationE applicationE, ApplicationVersionE applicationVersionE, String releaseName, Long clusterId, String values);
+    void deployTestApp(ApplicationE applicationE, ApplicationVersionE applicationVersionE, String releaseName, String secretName, Long clusterId, String values);
 
     void getTestAppStatus(Map<Long, List<String>> testReleases);
 
@@ -33,4 +34,6 @@ public interface DeployService {
     void createCertManager(Long clusterId);
 
     void operatePodCount(String deploymentName, String namespace, Long clusterId, Long count);
+
+    void operateSecret(Long clusterId, String namespace, String secretName, ProjectConfigDTO projectConfigDTO, String type);
 }
