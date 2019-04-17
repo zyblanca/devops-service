@@ -14,25 +14,18 @@ import io.choerodon.devops.app.service.ApplicationTemplateService;
 import io.choerodon.devops.app.service.DevopsEnvironmentService;
 import io.choerodon.devops.app.service.DevopsGitService;
 import io.choerodon.devops.app.service.DevopsGitlabPipelineService;
-import io.choerodon.devops.domain.application.entity.ApplicationE;
-import io.choerodon.devops.domain.application.entity.ApplicationTemplateE;
-import io.choerodon.devops.domain.application.entity.DevopsAutoDeployRecordE;
-import io.choerodon.devops.domain.application.entity.DevopsEnvironmentE;
-import io.choerodon.devops.domain.application.event.DevOpsAppImportPayload;
-import io.choerodon.devops.domain.application.event.DevOpsAppPayload;
-import io.choerodon.devops.domain.application.event.DevOpsUserPayload;
-import io.choerodon.devops.domain.application.event.GitlabProjectPayload;
-import io.choerodon.devops.domain.application.repository.ApplicationRepository;
-import io.choerodon.devops.domain.application.repository.ApplicationTemplateRepository;
-import io.choerodon.devops.domain.application.repository.DevopsAutoDeployRecordRepository;
-import io.choerodon.devops.domain.application.repository.DevopsAutoDeployRepository;
-import io.choerodon.devops.domain.application.repository.DevopsEnvironmentRepository;
-import io.choerodon.devops.domain.application.repository.GitlabRepository;
+import io.choerodon.devops.domain.application.entity.*;
+import io.choerodon.devops.domain.application.event.*;
+import io.choerodon.devops.domain.application.repository.*;
+import io.choerodon.devops.domain.application.valueobject.Organization;
 import io.choerodon.devops.domain.service.UpdateUserPermissionService;
 import io.choerodon.devops.domain.service.impl.UpdateAppUserPermissionServiceImpl;
+import io.choerodon.devops.infra.common.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -66,6 +59,16 @@ public class DevopsSagaHandler {
     private final DevopsAutoDeployRepository devopsAutoDeployRepository;
     private final ApplicationInstanceService applicationInstanceService;
     private final GitlabRepository gitlabRepository;
+
+    @Value("${services.gitlab.url}")
+    private String gitlabUrl;
+
+    @Autowired
+    private IamRepository iamRepository;
+
+    @Autowired
+    private UserAttrRepository userAttrRepository;
+
 
     @Autowired
     public DevopsSagaHandler(DevopsEnvironmentService devopsEnvironmentService,
@@ -167,6 +170,9 @@ public class DevopsSagaHandler {
             seq = 1)
     public String createApp(String data) {
         DevOpsAppPayload devOpsAppPayload = gson.fromJson(data, DevOpsAppPayload.class);
+
+        DevOpsAppPayloadDevKit devOpsAppPayloadDevKit = gson.fromJson(data, DevOpsAppPayloadDevKit.class);
+
         if (devOpsAppPayload.getType().equals(APPLICATION)) {
             try {
                 applicationService.operationApplication(devOpsAppPayload);
@@ -174,7 +180,30 @@ public class DevopsSagaHandler {
                 applicationService.setAppErrStatus(data, devOpsAppPayload.getIamProjectId());
                 throw e;
             }
+
+            //===== 对接DevKit,创建新应用通知到DevKit =====
+            BeanUtils.copyProperties(devOpsAppPayload, devOpsAppPayloadDevKit);
+            // 新应用名称
+            ApplicationE applicationE = applicationRepository.query(devOpsAppPayload.getAppId());
+            devOpsAppPayloadDevKit.setItemName(applicationE.getName());
+            // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
+            String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
+            LOGGER.error("=============== Begin =================");
+            ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
+            LOGGER.error("项目编码:" + projectE.getCode());
+            Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+            LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+            devOpsAppPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+            // Gitlab的Token
+            devOpsAppPayloadDevKit.setToken(applicationE.getToken());
+
+            LOGGER.error("=============== End =================");
+
         }
+
+        data = gson.toJson(devOpsAppPayloadDevKit);
+        LOGGER.error("data:" + data);
+        //===== 对接DevKit,创建新应用通知到DevKit =====
         return data;
     }
 
@@ -202,6 +231,25 @@ public class DevopsSagaHandler {
                     LOGGER.error("update application set create success status error");
                 }
             }
+
+            //===== 对接DevKit,创建新应用通知到DevKit =====
+            DevOpsAppImportPayloadDevKit devOpsAppImportPayloadDevKit = new DevOpsAppImportPayloadDevKit();
+            BeanUtils.copyProperties(devOpsAppImportPayload, devOpsAppImportPayloadDevKit);
+            // 新应用名称
+            devOpsAppImportPayloadDevKit.setItemName(applicationE.getName());
+            // 新应用Git地址, gitlabUrl + urlSlash + 组织Code + 项目Code + / + 应用Code + .git
+            String urlSlash = gitlabUrl.endsWith("/") ? "" : "/";
+            LOGGER.error("=============== Begin =================");
+            ProjectE projectE = iamRepository.queryIamProject(applicationE.getProjectE().getId());
+            LOGGER.error("项目编码:" + projectE.getCode());
+            Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+            LOGGER.error("组织编码:" + projectE.getOrganization().getCode());
+            devOpsAppImportPayloadDevKit.setGitAddress(gitlabUrl + urlSlash + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git");
+            // 新应用的组织编码
+            devOpsAppImportPayloadDevKit.setOrganizationCode(organization.getCode());
+            // Gitlab的Token
+            devOpsAppImportPayloadDevKit.setToken(applicationE.getToken());
+            data = gson.toJson(devOpsAppImportPayloadDevKit);
 //            gitlabRepository.batchAddVariable(applicationE.getGitlabProjectE().getId(), TypeUtil.objToInteger(devOpsAppImportPayload.getGitlabUserId()),
 //                    applicationService.setVariableDTO(applicationE.getHarborConfigE().getId(),applicationE.getChartConfigE().getId()));
         }
@@ -218,6 +266,13 @@ public class DevopsSagaHandler {
             seq = 1)
     public String updateGitlabUser(String data) {
         DevOpsUserPayload devOpsUserPayload = gson.fromJson(data, DevOpsUserPayload.class);
+
+        // 如果仅修改应用名称就不需要更新权限
+        DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = gson.fromJson(data, DevOpsUserPayloadDevKit.class);
+        if(devOpsUserPayloadDevKit.getOnlyModifyApplication()){
+            return data;
+        }
+
         try {
             UpdateUserPermissionService updateUserPermissionService = new UpdateAppUserPermissionServiceImpl();
             updateUserPermissionService

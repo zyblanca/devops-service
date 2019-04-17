@@ -27,6 +27,8 @@ public interface IamRepository {
 
     UserE queryByLoginName(String userName);
 
+    UserE queryById(Long id);
+
     List<ProjectE> listIamProjectByOrgId(Long organizationId, String name, String[] params);
 
     Page<ProjectDO> queryProjectByOrgId(Long organizationId, int page, int size, String name, String[] params);

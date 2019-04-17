@@ -1,18 +1,20 @@
 package io.choerodon.devops.api.eventhandler;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.choerodon.asgard.saga.SagaDefinition;
 import io.choerodon.asgard.saga.annotation.SagaTask;
-import io.choerodon.devops.api.dto.GitlabGroupMemberDTO;
-import io.choerodon.devops.api.dto.GitlabUserDTO;
-import io.choerodon.devops.api.dto.GitlabUserRequestDTO;
-import io.choerodon.devops.api.dto.RegisterOrganizationDTO;
+import io.choerodon.devops.api.dto.*;
 import io.choerodon.devops.app.service.*;
 import io.choerodon.devops.domain.application.entity.ApplicationE;
+import io.choerodon.devops.domain.application.entity.UserAttrE;
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
 import io.choerodon.devops.domain.application.event.*;
 import io.choerodon.devops.domain.application.repository.ApplicationRepository;
+import io.choerodon.devops.domain.application.repository.UserAttrRepository;
 import io.choerodon.devops.infra.common.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,8 @@ public class SagaHandler {
     @Autowired
     private ApplicationRepository applicationRepository;
 
+    @Autowired
+    private ProjectService projectService;
 
     private void loggerInfo(Object o) {
         LOGGER.info("data: {}", o);
@@ -96,6 +100,10 @@ public class SagaHandler {
         BeanUtils.copyProperties(projectEvent, gitlabGroupPayload);
         loggerInfo(gitlabGroupPayload);
         gitlabGroupService.updateGroup(gitlabGroupPayload, "");
+
+        // 对接DevKit, 传递项目的GitlabGroupId值
+        msg = gitlabGroupIdPayload(projectEvent);
+
         return msg;
     }
 
@@ -111,6 +119,56 @@ public class SagaHandler {
         loggerInfo(gitlabGroupPayload);
         gitlabGroupService.updateGroup(gitlabGroupPayload, "-gitops");
         return msg;
+    }
+
+
+    /**
+     * DevKit服务的项目启用监听
+     */
+    @SagaTask(code = "devKitEnableOrganization",
+            description = "DevKit服务的项目启用监听",
+            sagaCode = "iam-enable-project",
+            maxRetryCount = 3,
+            concurrentLimitNum = 2,
+            concurrentLimitPolicy = SagaDefinition.ConcurrentLimitPolicy.NONE,
+            seq = 10)
+    public String handleProjectEnableEvent(String data) {
+        ProjectEvent projectEvent = gson.fromJson(data, ProjectEvent.class);
+        // 对接DevKit, 传递项目的GitlabGroupId值
+        data = gitlabGroupIdPayload(projectEvent);
+        LOGGER.error("DevKit服务的项目禁用监听:" + data);
+        return data;
+    }
+
+    /**
+     * DevKit服务的项目禁用监听
+     */
+    @SagaTask(code = "devKitDisableProject",
+            description = "DevKit服务的项目禁用监听",
+            sagaCode = "iam-disable-project",
+            maxRetryCount = 3,
+            concurrentLimitNum = 2,
+            concurrentLimitPolicy = SagaDefinition.ConcurrentLimitPolicy.NONE,
+            seq = 10)
+    public String handleProjectDisableEvent(String data) {
+        ProjectEvent projectEvent = gson.fromJson(data, ProjectEvent.class);
+        // 对接DevKit, 传递项目的GitlabGroupId值
+        data = gitlabGroupIdPayload(projectEvent);
+        LOGGER.error("DevKit服务的项目禁用监听:" + data);
+        return data;
+    }
+
+    /**
+     * 封装GitLabGroupId到参数中
+     * @param projectEvent
+     * @return
+     */
+    private String gitlabGroupIdPayload(ProjectEvent  projectEvent) {
+        GitlabGroupE       gitlabGroupE       = projectService.queryDevopsProject(projectEvent.getProjectId());
+        ProjectEventDevKit projectEventDevKit = new ProjectEventDevKit();
+        BeanUtils.copyProperties(projectEvent, projectEventDevKit);
+        projectEventDevKit.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
+        return gson.toJson(projectEventDevKit);
     }
 
     /**
@@ -217,14 +275,28 @@ public class SagaHandler {
     @SagaTask(code = "devopsUpdateMemberRole", description = "角色同步事件",
             sagaCode = "iam-update-memberRole", maxRetryCount = 3,
             seq = 1)
-    public List<GitlabGroupMemberDTO> handleGitlabGroupMemberEvent(String payload) {
+    public List<GitlabGroupMemberDevKitDTO> handleGitlabGroupMemberEvent(String payload) {
         List<GitlabGroupMemberDTO> gitlabGroupMemberDTOList = gson.fromJson(payload,
                 new TypeToken<List<GitlabGroupMemberDTO>>() {
                 }.getType());
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.createGitlabGroupMemberRole(gitlabGroupMemberDTOList);
-        return gitlabGroupMemberDTOList;
+        // 对接DevKit,传递devopsAppGroupId
+        List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
+        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
+        for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            if("project".equals(gitlabGroupMemberDTO.getResourceType())){
+                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
+                GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
+                gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
+                gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
+            }
+        }
+
+        return gitlabGroupMemberDevKitDTOList;
+        //return gitlabGroupMemberDTOList;
     }
+
 
     /**
      * 删除角色同步事件
@@ -232,13 +304,26 @@ public class SagaHandler {
     @SagaTask(code = "devopsDeleteMemberRole", description = "删除角色同步事件",
             sagaCode = "iam-delete-memberRole", maxRetryCount = 3,
             seq = 1)
-    public List<GitlabGroupMemberDTO> handleDeleteMemberRoleEvent(String payload) {
+    public List<GitlabGroupMemberDevKitDTO> handleDeleteMemberRoleEvent(String payload) {
         List<GitlabGroupMemberDTO> gitlabGroupMemberDTOList = gson.fromJson(payload,
                 new TypeToken<List<GitlabGroupMemberDTO>>() {
                 }.getType());
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.deleteGitlabGroupMemberRole(gitlabGroupMemberDTOList);
-        return gitlabGroupMemberDTOList;
+        // 对接DevKit,传递devopsAppGroupId
+        List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
+        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
+        for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            if("project".equals(gitlabGroupMemberDTO.getResourceType())){
+                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
+                GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
+                gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
+                gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
+            }
+        }
+
+        return gitlabGroupMemberDevKitDTOList;
+        //return gitlabGroupMemberDTOList;
     }
 
     /**

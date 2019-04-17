@@ -1,0 +1,72 @@
+package io.choerodon.devops.domain.application.event;
+
+/**
+ * @author tankang
+ * 对接DevKit
+ */
+public class DevOpsAppImportPayloadDevKit extends DevOpsAppImportPayload {
+
+    /**
+     * 应用名称
+     */
+    private String itemName;
+    /**
+     * Git地址
+     */
+    private String gitAddress;
+
+    /**
+     * 组织编码
+     */
+    private String organizationCode;
+
+    /**
+     * GitLabToken
+     */
+    private String token;
+
+    /**
+     * 状态,1:启用 0:禁用
+     */
+    private Boolean status;
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public void setItemName(String itemName) {
+        this.itemName = itemName;
+    }
+
+    public String getGitAddress() {
+        return gitAddress;
+    }
+
+    public void setGitAddress(String gitAddress) {
+        this.gitAddress = gitAddress;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public Boolean getStatus() {
+        return status;
+    }
+
+    public void setStatus(Boolean status) {
+        this.status = status;
+    }
+
+    public String getOrganizationCode() {
+        return organizationCode;
+    }
+
+    public void setOrganizationCode(String organizationCode) {
+        this.organizationCode = organizationCode;
+    }
+}
