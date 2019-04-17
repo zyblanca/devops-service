@@ -289,8 +289,8 @@ public class SagaHandler {
                 BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
                 GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
                 gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
-                gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
             }
+            gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
         }
 
         return gitlabGroupMemberDevKitDTOList;
