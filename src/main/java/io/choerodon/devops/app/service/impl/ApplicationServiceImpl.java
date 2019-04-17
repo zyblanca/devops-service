@@ -345,7 +345,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = devOpsUserPayloadDevKitInput(devOpsUserPayload, applicationE);
         devOpsUserPayloadDevKit.setOnlyModifyApplication(onlyModifyApplication);
 
-        String input = gson.toJson(devOpsUserPayload);
+        String input = gson.toJson(devOpsUserPayloadDevKit);
         sagaClient.startSaga("devops-update-gitlab-users", new StartInstanceDTO(input, "app", appId.toString(), ResourceLevel.PROJECT.value(), projectId));
 
         return true;
