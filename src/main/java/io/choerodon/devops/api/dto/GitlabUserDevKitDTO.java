@@ -5,13 +5,13 @@ package io.choerodon.devops.api.dto;
  */
 public class GitlabUserDevKitDTO extends GitlabUserDTO{
 
-    private Boolean ladp;
+    private Boolean ldap;
 
-    public Boolean getLadp() {
-        return ladp;
+    public Boolean getLdap() {
+        return ldap;
     }
 
-    public void setLadp(Boolean ladp) {
-        this.ladp = ladp;
+    public void setLdap(Boolean ldap) {
+        this.ldap = ldap;
     }
 }
