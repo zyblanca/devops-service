@@ -26,7 +26,7 @@ preJob:
       password: password
 
 deployment:
-  managementPort: 8061
+  managementPort: 8060
 
 env:
   open:
