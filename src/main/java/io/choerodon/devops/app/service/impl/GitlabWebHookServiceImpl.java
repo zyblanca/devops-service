@@ -3,6 +3,7 @@ package io.choerodon.devops.app.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.choerodon.devops.app.service.*;
 import io.choerodon.devops.infra.common.util.FastjsonParserConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,10 +11,6 @@ import org.springframework.stereotype.Service;
 
 import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.devops.api.dto.*;
-import io.choerodon.devops.app.service.DevopsGitService;
-import io.choerodon.devops.app.service.DevopsGitlabCommitService;
-import io.choerodon.devops.app.service.DevopsGitlabPipelineService;
-import io.choerodon.devops.app.service.GitlabWebHookService;
 import io.choerodon.devops.domain.application.entity.DevopsMergeRequestE;
 import io.choerodon.devops.domain.application.repository.DevopsMergeRequestRepository;
 
@@ -26,13 +23,15 @@ public class GitlabWebHookServiceImpl implements GitlabWebHookService {
     private DevopsGitService devopsGitService;
     private DevopsGitlabCommitService devopsGitlabCommitService;
     private DevopsGitlabPipelineService devopsGitlabPipelineService;
+    private DevOpsCIService devOpsCIService;
 
     public GitlabWebHookServiceImpl(DevopsMergeRequestRepository devopsMergeRequestRepository, DevopsGitService devopsGitService, DevopsGitlabCommitService devopsGitlabCommitService,
-                                    DevopsGitlabPipelineService devopsGitlabPipelineService) {
+                                    DevopsGitlabPipelineService devopsGitlabPipelineService, DevOpsCIService devOpsCIService) {
         this.devopsMergeRequestRepository = devopsMergeRequestRepository;
         this.devopsGitService = devopsGitService;
         this.devopsGitlabPipelineService = devopsGitlabPipelineService;
         this.devopsGitlabCommitService = devopsGitlabCommitService;
+        this.devOpsCIService = devOpsCIService;
     }
 
     @Override
@@ -55,9 +54,9 @@ public class GitlabWebHookServiceImpl implements GitlabWebHookService {
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(pushWebHookDTO.toString());
                 }
-
                 devopsGitService.branchSync(pushWebHookDTO, token);
                 devopsGitlabCommitService.create(pushWebHookDTO, token);
+                devOpsCIService.getRepositorySize(pushWebHookDTO.getProject());
                 break;
             case "pipeline":
                 PipelineWebHookDTO pipelineWebHookDTO = JSONArray.parseObject(body, PipelineWebHookDTO.class, FastjsonParserConfigProvider.getParserConfig());
@@ -87,6 +86,7 @@ public class GitlabWebHookServiceImpl implements GitlabWebHookService {
                 LOGGER.debug(pushWebHookDTO.toString());
             }
             devopsGitService.fileResourceSyncSaga(pushWebHookDTO, token);
+            devOpsCIService.getRepositorySize(pushWebHookDTO.getProject());
         }
     }
 }

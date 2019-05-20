@@ -18,6 +18,7 @@ public class PushWebHookDTO {
     private String checkoutSha;
     private Integer userId;
     private Integer projectId;
+    private ProjectWebHookDto project;
     private List<CommitDTO> commits;
     private Integer totalCommitsCount;
     private String token;
@@ -86,6 +87,14 @@ public class PushWebHookDTO {
         this.projectId = projectId;
     }
 
+    public ProjectWebHookDto getProject() {
+        return project;
+    }
+
+    public void setProject(ProjectWebHookDto project) {
+        this.project = project;
+    }
+
     public List<CommitDTO> getCommits() {
         return commits;
     }
@@ -121,10 +130,12 @@ public class PushWebHookDTO {
                 + ", checkoutSha='" + checkoutSha + '\''
                 + ", userId=" + userId
                 + ", projectId=" + projectId
+                + ", project =" + project.toString()
                 + ", commits=" + String.join(" , ",
                 commits.stream().map(t -> t.getId() + " : " + t.getMessage()).collect(Collectors.toList()))
                 + ", totalCommitsCount=" + totalCommitsCount
                 + ", token='" + token + '\''
                 + '}';
     }
+
 }
