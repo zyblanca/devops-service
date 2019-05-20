@@ -28,17 +28,6 @@ public class GitlabWebHookController {
     @Autowired
     private ApplicationInstanceService applicationInstanceService;
 
-    @Autowired
-    private DevOpsCIService devOpsCIService;
-
-    @ApiOperation(value = "test")
-    @GetMapping(value = "test")
-    public void forwardGitlabWebHook(String param) {
-        ProjectWebHookDto projectWebHookDtorojectWebHookDto = new ProjectWebHookDto();
-        projectWebHookDtorojectWebHookDto.setPathWithNamespace("devcloud-dddd3/dd.git");
-        devOpsCIService.getRepositorySize(projectWebHookDtorojectWebHookDto);
-    }
-
     @Permission(permissionPublic = true)
     @ApiOperation(value = "webhook转发")
     @PostMapping
