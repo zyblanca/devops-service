@@ -59,8 +59,7 @@ eureka:
     leaseExpirationDurationInSeconds: 30
   client:
     serviceUrl:
-      #defaultZone: http://10.0.49.90:8000/eureka/
-      defaultZone: http://10.54.25.225:8000/eureka/
+      defaultZone: http://10.0.49.90:8000/eureka/
     registryFetchIntervalSeconds: 10
 security:
   basic:
