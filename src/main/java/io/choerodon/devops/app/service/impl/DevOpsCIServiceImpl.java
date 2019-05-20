@@ -8,6 +8,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +18,8 @@ public class DevOpsCIServiceImpl implements DevOpsCIService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DevOpsCIServiceImpl.class);
 
+    @Autowired
     private DevOpsCIClient devOpsCIClient;
-
-    public DevOpsCIServiceImpl(DevOpsCIClient devOpsCIClients){
-        this.devOpsCIClient = devOpsCIClient;
-    }
 
     @Override
     public void getRepositorySize(ProjectWebHookDto project) {
@@ -52,7 +50,10 @@ public class DevOpsCIServiceImpl implements DevOpsCIService {
                 projectName = paths[1];
             }
             LOGGER.info("Call Remote Service DevOpsCIClient RequestParameter -> groupName:{}, projectName: {}",groupName,projectName);
-            ResponseEntity<JSONObject> responseEntity = devOpsCIClient.getRepositorySize(groupName,projectName);
+            JSONObject parameters = new JSONObject();
+            parameters.put("groupName",groupName);
+            parameters.put("projectName",projectName);
+            ResponseEntity<JSONObject> responseEntity = devOpsCIClient.getRepositorySize(parameters);
             LOGGER.info("Call Remote Service DevOpsCIClient ResponseParameter -> responseEntity:{}",responseEntity.toString());
         } catch (Exception e){
             LOGGER.error("getRepositorySize error message ->{}",e.getMessage());
