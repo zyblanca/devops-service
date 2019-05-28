@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class DevOpsCIClientFallback implements DevOpsCIClient {
 
     @Override
-    public ResponseEntity<JSONObject> getRepositorySize(JSONObject parameters) {
-        return new ResponseEntity("error.repositorySize.get",HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<JSONObject> statisticsGitLibsize(String groupName, String projectName) {
+        return new ResponseEntity("error.statisticsSize",HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

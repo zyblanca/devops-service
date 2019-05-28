@@ -50,10 +50,7 @@ public class DevOpsCIServiceImpl implements DevOpsCIService {
                 projectName = paths[1];
             }
             LOGGER.info("Call Remote Service DevOpsCIClient RequestParameter -> groupName:{}, projectName: {}",groupName,projectName);
-            JSONObject parameters = new JSONObject();
-            parameters.put("groupName",groupName);
-            parameters.put("projectName",projectName);
-            ResponseEntity<JSONObject> responseEntity = devOpsCIClient.getRepositorySize(parameters);
+            ResponseEntity<JSONObject> responseEntity = devOpsCIClient.statisticsGitLibsize(groupName,projectName);
             LOGGER.info("Call Remote Service DevOpsCIClient ResponseParameter -> responseEntity:{}",responseEntity.toString());
         } catch (Exception e){
             LOGGER.error("getRepositorySize error message ->{}",e.getMessage());

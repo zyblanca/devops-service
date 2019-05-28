@@ -28,6 +28,8 @@ public class GitlabWebHookController {
     @Autowired
     private ApplicationInstanceService applicationInstanceService;
 
+
+
     @Permission(permissionPublic = true)
     @ApiOperation(value = "webhook转发")
     @PostMapping
