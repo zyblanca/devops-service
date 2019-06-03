@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(value = "devops-ci", fallback = DevOpsCIClientFallback.class)
 public interface DevOpsCIClient {
 
-    @RequestMapping(value = {"v1/git/statisticsGitLib/{groupName}/size"}, method = RequestMethod.GET)
+    @RequestMapping(value = {"v1/git/groups/{groupName}/statistic/size"}, method = RequestMethod.GET)
     ResponseEntity<JSONObject> statisticsGitLibsize(@PathVariable(value = "groupName") String groupName,
                                                         @RequestParam(value = "projectName",required = false) String projectName);
 
