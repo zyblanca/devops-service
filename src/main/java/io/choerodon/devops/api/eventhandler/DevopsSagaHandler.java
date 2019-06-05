@@ -165,7 +165,7 @@ public class DevopsSagaHandler {
      */
     @SagaTask(code = "devopsOperationGitlabProject",
             description = "devops create GitLab project",
-            sagaCode = "devops-create-gitlab-project",
+            sagaCode = "devops-create-gitlab-application",
             maxRetryCount = 3,
             seq = 1)
     public String createApp(String data) {
@@ -212,7 +212,7 @@ public class DevopsSagaHandler {
      */
     @SagaTask(code = "devopsCreateGitlabProject",
             description = "Devops从外部代码平台导入到gitlab项目",
-            sagaCode = "devops-import-gitlab-project",
+            sagaCode = "devops-import-gitlab-application",
             maxRetryCount = 3,
             seq = 1)
     public String importApp(String data) {

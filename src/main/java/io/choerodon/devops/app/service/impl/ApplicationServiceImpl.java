@@ -1037,7 +1037,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
-    @Saga(code = "devops-import-gitlab-project", description = "Devops从外部代码平台导入到gitlab项目", inputSchema = "{}")
+    @Saga(code = "devops-import-gitlab-application", description = "Devops从外部代码平台导入到gitlab项目", inputSchema = "{}")
     public ApplicationRepDTO importApplicationFromGitPlatform(Long projectId, ApplicationImportDTO applicationImportDTO) {
         // 获取当前操作的用户的信息
         UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(GitUserNameUtil.getUserId()));
@@ -1112,7 +1112,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         String input = gson.toJson(devOpsAppImportPayload);
-        sagaClient.startSaga("devops-import-gitlab-project", new StartInstanceDTO(input, "", "", ResourceLevel.PROJECT.value(), projectId));
+        sagaClient.startSaga("devops-import-gitlab-application", new StartInstanceDTO(input, "", "", ResourceLevel.PROJECT.value(), projectId));
 
         return ConvertHelper.convert(applicationRepository.query(appId), ApplicationRepDTO.class);
     }
@@ -1124,7 +1124,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 
     @Override
-    @Saga(code = "devops-create-gitlab-project",
+    @Saga(code = "devops-create-gitlab-application",
             description = "Devops创建gitlab项目", inputSchema = "{}")
     public void createIamApplication(IamAppPayLoad iamAppPayLoad) {
 
@@ -1173,7 +1173,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         //0.14.0-0.15.0的时候，同步已有的app到iam，此时app已经存在gitlab project,不需要再创建
         if (applicationE.getGitlabProjectE().getId() == null) {
             String input = gson.toJson(devOpsAppPayloadDevKitInput(devOpsAppPayload, applicationE, null));
-            sagaClient.startSaga("devops-create-gitlab-project", new StartInstanceDTO(input, "", "", ResourceLevel.PROJECT.value(), iamAppPayLoad.getProjectId()));
+            sagaClient.startSaga("devops-create-gitlab-application", new StartInstanceDTO(input, "", "", ResourceLevel.PROJECT.value(), iamAppPayLoad.getProjectId()));
         }
     }
 
