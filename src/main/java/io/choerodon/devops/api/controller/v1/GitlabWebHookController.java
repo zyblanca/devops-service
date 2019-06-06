@@ -4,6 +4,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
+import io.choerodon.devops.api.dto.ProjectWebHookDto;
+import io.choerodon.devops.app.service.DevOpsCIService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ public class GitlabWebHookController {
     private GitlabWebHookService gitlabWebHookService;
     @Autowired
     private ApplicationInstanceService applicationInstanceService;
+
+
 
     @Permission(permissionPublic = true)
     @ApiOperation(value = "webhook转发")
