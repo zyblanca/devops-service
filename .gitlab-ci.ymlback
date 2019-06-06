@@ -13,6 +13,7 @@ build:
     - mv target/app.jar $PWD/src/main/docker
     - kaniko -c $PWD/src/main/docker -f $PWD/src/main/docker/Dockerfile -d ${DOCKER_REGISTRY}/${GROUP_NAME}/${PROJECT_NAME}:${CI_COMMIT_TAG}
 
+
 release:
   stage: release
   script:
