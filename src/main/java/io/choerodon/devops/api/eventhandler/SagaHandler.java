@@ -282,18 +282,7 @@ public class SagaHandler {
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.createGitlabGroupMemberRole(gitlabGroupMemberDTOList);
         // 对接DevKit,传递devopsAppGroupId
-        List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
-        GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
-        for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
-            BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
-            if("project".equals(gitlabGroupMemberDTO.getResourceType())){
-                GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
-                gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
-            }
-            gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
-        }
-
-        return gitlabGroupMemberDevKitDTOList;
+        return getGitlabGroupMemberDevKitDTOList(gitlabGroupMemberDTOList);
         //return gitlabGroupMemberDTOList;
     }
 
@@ -311,19 +300,27 @@ public class SagaHandler {
         loggerInfo(gitlabGroupMemberDTOList);
         gitlabGroupMemberService.deleteGitlabGroupMemberRole(gitlabGroupMemberDTOList);
         // 对接DevKit,传递devopsAppGroupId
+        return getGitlabGroupMemberDevKitDTOList(gitlabGroupMemberDTOList);
+        //return gitlabGroupMemberDTOList;
+    }
+
+    /**
+     * 对接DevKit,传递devopsAppGroupId
+     * @param gitlabGroupMemberDTOList
+     * @return
+     */
+    private List<GitlabGroupMemberDevKitDTO> getGitlabGroupMemberDevKitDTOList(List<GitlabGroupMemberDTO> gitlabGroupMemberDTOList) {
         List<GitlabGroupMemberDevKitDTO> gitlabGroupMemberDevKitDTOList = new ArrayList<>();
         GitlabGroupMemberDevKitDTO gitlabGroupMemberDevKitDTO = new GitlabGroupMemberDevKitDTO();
         for (GitlabGroupMemberDTO gitlabGroupMemberDTO : gitlabGroupMemberDTOList) {
+            BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
             if("project".equals(gitlabGroupMemberDTO.getResourceType())){
-                BeanUtils.copyProperties(gitlabGroupMemberDTO, gitlabGroupMemberDevKitDTO);
                 GitlabGroupE gitlabGroupE = projectService.queryDevopsProject(gitlabGroupMemberDTO.getResourceId());
                 gitlabGroupMemberDevKitDTO.setDevopsAppGroupId(gitlabGroupE.getDevopsAppGroupId());
-                gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
             }
+            gitlabGroupMemberDevKitDTOList.add(gitlabGroupMemberDevKitDTO);
         }
-
         return gitlabGroupMemberDevKitDTOList;
-        //return gitlabGroupMemberDTOList;
     }
 
     /**
