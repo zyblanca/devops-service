@@ -1,7 +1,7 @@
 package io.choerodon.devops.infra.feign;
 
 import com.alibaba.fastjson.JSONObject;
-import io.choerodon.devops.domain.application.valueobject.CIApplication;
+import io.choerodon.devops.infra.dataobject.devopsCI.CIApplicationDO;
 import io.choerodon.devops.infra.feign.fallback.DevOpsCIClientFallback;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +15,6 @@ public interface DevOpsCIClient {
                                                     @RequestParam(value = "projectName", required = false) String projectName);
 
     @GetMapping("/v1/git/applications")
-    ResponseEntity<CIApplication> getApplicationByGitAddress(@RequestParam(value = "gitAddress") String gitAddress);
+    ResponseEntity<CIApplicationDO> getApplicationByGitAddress(@RequestParam(value = "gitAddress") String gitAddress);
 
 }

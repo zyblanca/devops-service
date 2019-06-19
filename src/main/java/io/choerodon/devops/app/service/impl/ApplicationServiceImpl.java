@@ -33,7 +33,6 @@ import io.choerodon.devops.domain.application.entity.iam.UserE;
 import io.choerodon.devops.domain.application.event.*;
 import io.choerodon.devops.domain.application.factory.ApplicationFactory;
 import io.choerodon.devops.domain.application.repository.*;
-import io.choerodon.devops.domain.application.valueobject.CIApplication;
 import io.choerodon.devops.domain.application.valueobject.Organization;
 import io.choerodon.devops.domain.application.valueobject.ProjectHook;
 import io.choerodon.devops.domain.application.valueobject.Variable;
@@ -49,7 +48,6 @@ import io.choerodon.devops.infra.dataobject.gitlab.BranchDO;
 import io.choerodon.devops.infra.dataobject.gitlab.GitlabProjectDO;
 import io.choerodon.devops.infra.feign.ChartClient;
 import io.choerodon.devops.infra.feign.HarborClient;
-import io.choerodon.devops.infra.persistence.impl.DevopsCIRepositoryImpl;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
 import io.choerodon.websocket.tool.UUIDTool;
 import org.apache.commons.io.FileUtils;
@@ -532,17 +530,17 @@ public class ApplicationServiceImpl implements ApplicationService {
         String gitAddress = (!gitlabUrl.endsWith("/") ? gitlabUrl + "/" : gitlabUrl) + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git";
 
         //判断是否已存在于devops-ci,存在则忽悠gitlab创建流程
-        CIApplicationDO applicationDO = devopsCIRepository.getApplicationByGitAddress(gitAddress);
+        CIApplicationE ciApplicationE = devopsCIRepository.getApplicationByGitAddress(gitAddress);
 
-        if (null != applicationDO && null != applicationDO.getId()) {
+        if (null != ciApplicationE && null != ciApplicationE.getId()) {
             try {
-                String applicationToken = getApplicationToken(applicationDO.getGitProjectId(), gitlabProjectPayload.getUserId());
+                String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
                 applicationE.setToken(applicationToken);
                 applicationE.initGitlabProjectE(TypeUtil.objToInteger(gitlabProjectPayload.getGitlabProjectId()));
                 applicationE.initSynchro(true);
 
                 // set project hook id for application
-                setProjectHook(applicationE, applicationDO.getGitProjectId(), applicationToken, gitlabProjectPayload.getUserId());
+                setProjectHook(applicationE, ciApplicationE.getGitProjectId(), applicationToken, gitlabProjectPayload.getUserId());
                 // 更新并校验
                 if (applicationRepository.update(applicationE) != 1) {
                     throw new CommonException(ERROR_UPDATE_APP);

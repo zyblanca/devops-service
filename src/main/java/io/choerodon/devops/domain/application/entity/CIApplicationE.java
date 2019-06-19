@@ -1,9 +1,9 @@
-package io.choerodon.devops.domain.application.valueobject;
+package io.choerodon.devops.domain.application.entity;
 
 /**
  * devops-ci 应用信息
  */
-public class CIApplication {
+public class CIApplicationE {
 
     private Long id;
 

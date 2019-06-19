@@ -1,7 +1,7 @@
 package io.choerodon.devops.infra.feign.fallback;
 
 import com.alibaba.fastjson.JSONObject;
-import io.choerodon.devops.domain.application.valueobject.CIApplication;
+import io.choerodon.devops.infra.dataobject.devopsCI.CIApplicationDO;
 import io.choerodon.devops.infra.feign.DevOpsCIClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ public class DevOpsCIClientFallback implements DevOpsCIClient {
     }
 
     @Override
-    public ResponseEntity<CIApplication> getApplicationByGitAddress(String gitAddress) {
+    public ResponseEntity<CIApplicationDO> getApplicationByGitAddress(String gitAddress) {
         return new ResponseEntity("查询 devops-ci 应用异常", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
