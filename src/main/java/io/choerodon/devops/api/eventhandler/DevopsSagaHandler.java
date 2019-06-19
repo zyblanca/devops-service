@@ -265,7 +265,7 @@ public class DevopsSagaHandler {
 
     @SagaTask(code = "devopsCreateApplication",
             description = "devops-ci导入gitlab项目",
-            sagaCode = "devops-ci-import-gitlab-application",
+            sagaCode = "devops-ci-create-application",
             maxRetryCount = 3,
             seq = 1)
     public String createApplication(String data) {
