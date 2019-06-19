@@ -4,7 +4,9 @@ import io.choerodon.core.convertor.ConvertorI;
 import io.choerodon.devops.domain.application.entity.CIApplicationE;
 import io.choerodon.devops.infra.dataobject.devopsCI.CIApplicationDO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DevopsCIApplicationConvertor implements ConvertorI<CIApplicationE, CIApplicationDO, Object> {
 
     @Override
