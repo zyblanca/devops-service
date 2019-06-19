@@ -534,7 +534,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         //判断是否已存在于devops-ci,存在则忽悠gitlab创建流程
         CIApplicationDO applicationDO = devopsCIRepository.getApplicationByGitAddress(gitAddress);
 
-        if (null == applicationDO || null == applicationDO.getId()) {
+        if (null != applicationDO && null != applicationDO.getId()) {
             try {
                 String applicationToken = getApplicationToken(applicationDO.getGitProjectId(), gitlabProjectPayload.getUserId());
                 applicationE.setToken(applicationToken);
