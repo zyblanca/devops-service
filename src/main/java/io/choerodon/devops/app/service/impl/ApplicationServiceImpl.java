@@ -537,7 +537,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
                 applicationE.setToken(applicationToken);
                 //设置GitLabProjectId
-                applicationE.initGitlabProjectE(TypeUtil.objToInteger(ciApplicationE.getGitProjectId()));
+                applicationE.initGitlabProjectE(ciApplicationE.getGitProjectId());
                 applicationE.initSynchro(true);
 
                 // set project hook id for application
