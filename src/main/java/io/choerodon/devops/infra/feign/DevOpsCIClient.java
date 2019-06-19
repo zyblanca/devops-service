@@ -14,7 +14,7 @@ public interface DevOpsCIClient {
     ResponseEntity<JSONObject> statisticsGitLibsize(@PathVariable(value = "groupName") String groupName,
                                                     @RequestParam(value = "projectName", required = false) String projectName);
 
-    @GetMapping(value = "v1/git/applications")
+    @RequestMapping(value = {"v1/git/applications"}, method = RequestMethod.GET)
     ResponseEntity<CIApplication> getApplicationByGitAddress(String gitAddress);
 
 }
