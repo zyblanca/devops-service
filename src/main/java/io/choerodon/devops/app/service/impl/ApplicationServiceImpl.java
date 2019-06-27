@@ -43,6 +43,7 @@ import io.choerodon.devops.infra.common.util.enums.ProjectConfigType;
 import io.choerodon.devops.infra.config.ConfigurationProperties;
 import io.choerodon.devops.infra.config.HarborConfigurationProperties;
 import io.choerodon.devops.infra.config.RetrofitHandler;
+import io.choerodon.devops.infra.dataobject.devopsCI.CIApplicationDO;
 import io.choerodon.devops.infra.dataobject.gitlab.BranchDO;
 import io.choerodon.devops.infra.dataobject.gitlab.GitlabProjectDO;
 import io.choerodon.devops.infra.feign.ChartClient;
@@ -142,6 +143,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     private GitlabProjectRepository gitlabProjectRepository;
     @Autowired
     private DevopsProjectConfigRepository devopsProjectConfigRepository;
+    @Autowired
+    private DevopsCIRepository devopsCIRepository;
 
     @Override
     @Saga(code = "devops-create-application",
@@ -203,7 +206,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
 
-    private DevOpsAppPayloadDevKit devOpsAppPayloadDevKitInput(DevOpsAppPayload devOpsAppPayload, ApplicationE applicationE, Boolean active){
+    private DevOpsAppPayloadDevKit devOpsAppPayloadDevKitInput(DevOpsAppPayload devOpsAppPayload, ApplicationE applicationE, Boolean active) {
         DevOpsAppPayloadDevKit devOpsAppPayloadDevKit = new DevOpsAppPayloadDevKit();
         BeanUtils.copyProperties(devOpsAppPayload, devOpsAppPayloadDevKit);
         // 新应用名称
@@ -221,7 +224,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         // 新应用组织编码
         devOpsAppPayloadDevKit.setOrganizationCode(organization.getCode());
 
-        if(null != active) {
+        if (null != active) {
             // 应用的状态
             LOGGER.error("更新状态:" + active);
             devOpsAppPayloadDevKit.setStatus(active);
@@ -229,7 +232,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         return devOpsAppPayloadDevKit;
     }
 
-    private DevOpsUserPayloadDevKit devOpsUserPayloadDevKitInput(DevOpsUserPayload devOpsUserPayload, ApplicationE applicationE){
+    private DevOpsUserPayloadDevKit devOpsUserPayloadDevKitInput(DevOpsUserPayload devOpsUserPayload, ApplicationE applicationE) {
         DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = new DevOpsUserPayloadDevKit();
         BeanUtils.copyProperties(devOpsUserPayload, devOpsUserPayloadDevKit);
         // 新应用名称
@@ -327,7 +330,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         devOpsUserPayload.setGitlabProjectId(oldApplicationE.getGitlabProjectE().getId());
         devOpsUserPayload.setIamUserIds(applicationUpdateDTO.getUserIds());
 
-        Boolean onlyModifyApplication =false;
+        Boolean onlyModifyApplication = false;
         if (oldApplicationE.getIsSkipCheckPermission() && applicationUpdateDTO.getIsSkipCheckPermission()) {
             //return true; 不管是否修改权限和名称,都需要发送Saga详细给其他平台同步
             onlyModifyApplication = true;
@@ -522,6 +525,38 @@ public class ApplicationServiceImpl implements ApplicationService {
                 gitlabGroupE.getProjectE().getId());
         ProjectE projectE = iamRepository.queryIamProject(gitlabGroupE.getProjectE().getId());
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+
+        //构建gitaddress
+        String gitAddress = (!gitlabUrl.endsWith("/") ? gitlabUrl + "/" : gitlabUrl) + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git";
+
+        //判断是否已存在于devops-ci,存在则忽悠gitlab创建流程
+        CIApplicationE ciApplicationE = devopsCIRepository.getApplicationByGitAddress(gitAddress);
+
+        if (null != ciApplicationE && null != ciApplicationE.getId()) {
+            try {
+
+                // 为项目下的成员分配对于此gitlab项目的权限
+                gitlabProjectPayload.setGitlabProjectId(ciApplicationE.getGitProjectId());
+                operateGitlabMemberPermission(gitlabProjectPayload);
+
+                String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
+                applicationE.setToken(applicationToken);
+                //设置GitLabProjectId
+                applicationE.initGitlabProjectE(ciApplicationE.getGitProjectId());
+                applicationE.initSynchro(true);
+
+                // set project hook id for application
+                setProjectHook(applicationE, ciApplicationE.getGitProjectId(), applicationToken, gitlabProjectPayload.getUserId());
+                // 更新并校验
+                if (applicationRepository.update(applicationE) != 1) {
+                    throw new CommonException(ERROR_UPDATE_APP);
+                }
+            } catch (Exception e) {
+                throw new CommonException(e.getMessage(), e);
+            }
+            return;
+        }
+
         GitlabProjectDO gitlabProjectDO = gitlabRepository
                 .getProjectByName(organization.getCode() + "-" + projectE.getCode(), applicationE.getCode(),
                         gitlabProjectPayload.getUserId());

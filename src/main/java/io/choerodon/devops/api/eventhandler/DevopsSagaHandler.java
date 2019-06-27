@@ -4,10 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import io.choerodon.asgard.saga.SagaDefinition;
 import io.choerodon.asgard.saga.annotation.SagaTask;
-import io.choerodon.devops.api.dto.ApplicationDeployDTO;
-import io.choerodon.devops.api.dto.ApplicationInstanceDTO;
-import io.choerodon.devops.api.dto.PipelineWebHookDTO;
-import io.choerodon.devops.api.dto.PushWebHookDTO;
+import io.choerodon.core.exception.CommonException;
+import io.choerodon.devops.api.dto.*;
+import io.choerodon.devops.api.validator.ApplicationValidator;
 import io.choerodon.devops.app.service.ApplicationInstanceService;
 import io.choerodon.devops.app.service.ApplicationService;
 import io.choerodon.devops.app.service.ApplicationTemplateService;
@@ -15,12 +14,18 @@ import io.choerodon.devops.app.service.DevopsEnvironmentService;
 import io.choerodon.devops.app.service.DevopsGitService;
 import io.choerodon.devops.app.service.DevopsGitlabPipelineService;
 import io.choerodon.devops.domain.application.entity.*;
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabGroupE;
+import io.choerodon.devops.domain.application.entity.gitlab.GitlabMemberE;
 import io.choerodon.devops.domain.application.event.*;
+import io.choerodon.devops.domain.application.factory.ApplicationFactory;
 import io.choerodon.devops.domain.application.repository.*;
 import io.choerodon.devops.domain.application.valueobject.Organization;
 import io.choerodon.devops.domain.service.UpdateUserPermissionService;
 import io.choerodon.devops.domain.service.impl.UpdateAppUserPermissionServiceImpl;
+import io.choerodon.devops.infra.common.util.GitUserNameUtil;
 import io.choerodon.devops.infra.common.util.TypeUtil;
+import io.choerodon.devops.infra.common.util.enums.AccessLevel;
+import io.choerodon.devops.infra.common.util.enums.GitPlatformType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -29,6 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Creator: Runge
@@ -256,6 +262,26 @@ public class DevopsSagaHandler {
         return data;
     }
 
+
+    @SagaTask(code = "devopsCreateApplication",
+            description = "devops-ci导入gitlab项目",
+            sagaCode = "devops-ci-create-application",
+            maxRetryCount = 3,
+            seq = 1)
+    public String createApplication(String data) {
+
+        ApplicationReqDTO applicationReqDTO = gson.fromJson(data, ApplicationReqDTO.class);
+
+        //查询项目成员
+        List<Long> userIds = iamRepository.getAllMemberIdsWithoutOwner(applicationReqDTO.getProjectId());
+
+        applicationReqDTO.setUserIds(userIds);
+
+        applicationService.create(applicationReqDTO.getProjectId(), applicationReqDTO);
+
+        return gson.toJson(applicationReqDTO);
+    }
+
     /**
      * GitOps 用户权限分配处理
      */
@@ -269,7 +295,7 @@ public class DevopsSagaHandler {
 
         // 如果仅修改应用名称就不需要更新权限
         DevOpsUserPayloadDevKit devOpsUserPayloadDevKit = gson.fromJson(data, DevOpsUserPayloadDevKit.class);
-        if(devOpsUserPayloadDevKit.getOnlyModifyApplication()){
+        if (devOpsUserPayloadDevKit.getOnlyModifyApplication()) {
             return data;
         }
 

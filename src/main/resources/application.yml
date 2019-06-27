@@ -4,7 +4,7 @@ spring:
     username: choerodon
     password: 123456
   redis:
-    host: localhost
+    host: 10.0.49.90:8379
   http:
     encoding:
      charset: UTF-8
@@ -20,8 +20,8 @@ services:
     password: "123456"
     insecureSkipTlsVerify: false
   gitlab:
-    url: "gitlab.example.com"
-    sshUrl: "gitlab.example.com"
+    url: "http://gitlab.devopsuat.crc.com.cn"
+    sshUrl: "gitlab.devopsuat.crc.com.cn:2289"
     password: 123456
     projectLimit: 100
   helm:
