@@ -279,7 +279,7 @@ public class DevopsSagaHandler {
 
         applicationService.create(applicationReqDTO.getProjectId(), applicationReqDTO);
 
-        return gson.toJson(applicationReqDTO);
+        return data;
     }
 
     /**
