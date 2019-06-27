@@ -534,6 +534,11 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         if (null != ciApplicationE && null != ciApplicationE.getId()) {
             try {
+
+                // 为项目下的成员分配对于此gitlab项目的权限
+                gitlabProjectPayload.setGitlabProjectId(ciApplicationE.getGitProjectId());
+                operateGitlabMemberPermission(gitlabProjectPayload);
+
                 String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
                 applicationE.setToken(applicationToken);
                 //设置GitLabProjectId
