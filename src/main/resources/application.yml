@@ -4,15 +4,15 @@ spring:
     username: choerodon
     password: 123456
   redis:
-    host: 10.0.49.90:8379
+    host: localhost
   http:
     encoding:
-     charset: UTF-8
-     force: true
-     enabled: true
+      charset: UTF-8
+      force: true
+      enabled: true
     multipart:
-     max-file-size: 30MB
-     max-request-size: 30MB
+      max-file-size: 30MB
+      max-request-size: 30MB
 services:
   harbor:
     baseUrl: "harbor.example.com"
@@ -20,8 +20,8 @@ services:
     password: "123456"
     insecureSkipTlsVerify: false
   gitlab:
-    url: "http://gitlab.devopsuat.crc.com.cn"
-    sshUrl: "gitlab.devopsuat.crc.com.cn:2289"
+    url: "gitlab.example.com"
+    sshUrl: "gitlab.example.com"
     password: 123456
     projectLimit: 100
   helm:
@@ -63,7 +63,7 @@ eureka:
     registryFetchIntervalSeconds: 10
 security:
   basic:
-      enabled: false
+    enabled: false
   ignored: /ci,/webhook/**,/v2/api-docs,/agent/**,/ws/**,/gitlab/email
 mybatis:
   mapperLocations: classpath*:/mapper/*.xml
