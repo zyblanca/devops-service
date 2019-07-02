@@ -112,7 +112,7 @@ public class ApplicationVersionServiceImpl implements ApplicationVersionService 
             helmUrl = devopsProjectConfigE.getConfig().getUrl();
         }
 
-        applicationVersionE.setRepository(helmUrl.endsWith("/") ? helmUrl : helmUrl + "/" + organization.getCode() + "/" + projectE.getCode() + "/");
+        applicationVersionE.setRepository(helmUrl.endsWith("/") ? helmUrl : helmUrl + "/" + organization.getCode() + "-" + projectE.getCode() + "-helm-local");
         String storeFilePath = STOREPATH + version;
         if (newApplicationVersionE != null) {
             return;
