@@ -174,7 +174,8 @@ public class DevopsSagaHandler {
             seq = 1)
     public String syncSteamDataToGitlab(String data) {
         logger.info("同步行云数据到Gitlab, data={}", data);
-        DevOpsAppPayload devOpsAppPayload = gson.fromJson(data, DevOpsAppPayload.class);
+        DevOpsAppPayload gitlabProjectPayload = gson.fromJson(data, DevOpsAppPayload.class);
+        applicationService.syncSteamDataToGitlab(gitlabProjectPayload);
         return data;
     }
 

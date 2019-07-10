@@ -81,6 +81,13 @@ public interface ApplicationService {
                                           String params);
 
     /**
+     * 针对Gitlab重建的项目，同步行云数据到Gitlab
+     *
+     * @param gitlabProjectPayload 应用参数
+     */
+    void syncSteamDataToGitlab(DevOpsAppPayload gitlabProjectPayload);
+
+    /**
      * 处理应用创建逻辑
      *
      * @param gitlabProjectEventDTO 应用信息

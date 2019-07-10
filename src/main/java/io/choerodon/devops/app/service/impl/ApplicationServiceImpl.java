@@ -72,6 +72,7 @@ import retrofit2.Retrofit;
 @Service
 @EnableConfigurationProperties(HarborConfigurationProperties.class)
 public class ApplicationServiceImpl implements ApplicationService {
+    private static final Logger logger = LoggerFactory.getLogger(ApplicationServiceImpl.class);
     private static final Pattern REPOSITORY_URL_PATTERN = Pattern.compile("^http.*\\.git");
     private static final String GITLAB_CI_FILE = ".gitlab-ci.ymlback";
     private static final String DOCKER_FILE_NAME = "Dockerfile";
@@ -515,6 +516,44 @@ public class ApplicationServiceImpl implements ApplicationService {
         Collection<File> dockerfile = FileUtils.listFiles(templateWorkDir, filenameFilter, TrueFileFilter.INSTANCE);
         Optional<File> df = dockerfile.stream().findFirst();
         templateDockerfileMap.putIfAbsent(applicationTemplateId, df.map(f -> f.getAbsolutePath().replace(templateWorkDir.getAbsolutePath() + System.getProperty("file.separator"), "")).orElse("Dockerfile"));
+    }
+
+    @Override
+    public void syncSteamDataToGitlab(DevOpsAppPayload gitlabProjectPayload) {
+        logger.info("执行同步行云数据到Gitlab");
+        ProjectE projectE = iamRepository.queryIamProject(gitlabProjectPayload.getIamProjectId());
+        ApplicationE applicationE = applicationRepository.queryByCode(gitlabProjectPayload.getPath(), projectE.getId());
+        Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+        //构建gitaddress
+        String gitAddress = (!gitlabUrl.endsWith("/") ? gitlabUrl + "/" : gitlabUrl) + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git";
+        //判断是否已存在于devops-ci,存在则忽悠gitlab创建流程
+        CIApplicationE ciApplicationE = devopsCIRepository.getApplicationByGitAddress(gitAddress);
+        if (null != ciApplicationE && null != ciApplicationE.getId()) {
+            // 为项目下的成员分配对于此gitlab项目的权限
+            try {
+                // 为项目下的成员分配对于此gitlab项目的权限
+                gitlabProjectPayload.setGitlabProjectId(ciApplicationE.getGitProjectId());
+                operateGitlabMemberPermission(gitlabProjectPayload);
+
+                String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
+                logger.info("applicationToken={}", applicationToken);
+                applicationE.setToken(applicationToken);
+                //设置GitLabProjectId
+                applicationE.initGitlabProjectE(ciApplicationE.getGitProjectId());
+                applicationE.initSynchro(true);
+
+                // set project hook id for application
+                setProjectHook(applicationE, ciApplicationE.getGitProjectId(), applicationToken, gitlabProjectPayload.getUserId());
+                // 更新并校验
+                if (applicationRepository.update(applicationE) != 1) {
+                    throw new CommonException(ERROR_UPDATE_APP);
+                }
+            } catch (Exception e) {
+                throw new CommonException(e.getMessage(), e);
+            }
+        } else {
+            logger.warn("仓库在DevopsCI不存在，gitAddress={}", gitAddress);
+        }
     }
 
     @Override
