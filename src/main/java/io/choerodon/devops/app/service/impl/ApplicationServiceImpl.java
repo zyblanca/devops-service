@@ -532,6 +532,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             // 为项目下的成员分配对于此gitlab项目的权限
             try {
                 // 为项目下的成员分配对于此gitlab项目的权限
+                gitlabProjectPayload.setSkipCheckPermission(Boolean.TRUE);
                 gitlabProjectPayload.setGitlabProjectId(ciApplicationE.getGitProjectId());
                 operateGitlabMemberPermission(gitlabProjectPayload);
 
