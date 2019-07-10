@@ -44,6 +44,7 @@ import java.util.List;
  */
 @Component
 public class DevopsSagaHandler {
+    private Logger logger = LoggerFactory.getLogger(DevopsSagaHandler.class);
     private static final String TEMPLATE = "template";
     private static final String APPLICATION = "application";
     private static final String STATUS_FIN = "finished";
@@ -163,6 +164,17 @@ public class DevopsSagaHandler {
             LOGGER.info(e.getMessage());
         }
         devopsGitService.fileResourceSync(pushWebHookDTO);
+        return data;
+    }
+
+    @SagaTask(code = "syncSteamDataToGitlab",
+            description = "针对Gitlab重建的项目，同步行云数据到Gitlab",
+            sagaCode = "devops-ci-sync-steam-data-gitlab",
+            maxRetryCount = 2,
+            seq = 1)
+    public String syncSteamDataToGitlab(String data) {
+        logger.info("同步行云数据到Gitlab, data={}", data);
+        DevOpsAppPayload devOpsAppPayload = gson.fromJson(data, DevOpsAppPayload.class);
         return data;
     }
 
