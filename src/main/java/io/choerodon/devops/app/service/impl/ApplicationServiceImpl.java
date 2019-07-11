@@ -529,22 +529,21 @@ public class ApplicationServiceImpl implements ApplicationService {
         //判断是否已存在于devops-ci,存在则忽悠gitlab创建流程
         CIApplicationE ciApplicationE = devopsCIRepository.getApplicationByGitAddress(gitAddress);
         if (null != ciApplicationE && null != ciApplicationE.getId()) {
-            // 为项目下的成员分配对于此gitlab项目的权限
             try {
+                int newGitProjectId = gitlabProjectPayload.getGitlabProjectId();
                 // 为项目下的成员分配对于此gitlab项目的权限
                 gitlabProjectPayload.setSkipCheckPermission(Boolean.TRUE);
-                gitlabProjectPayload.setGitlabProjectId(ciApplicationE.getGitProjectId());
                 operateGitlabMemberPermission(gitlabProjectPayload);
 
-                String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
-                logger.info("applicationToken={}", applicationToken);
+                String applicationToken = getApplicationToken(newGitProjectId, gitlabProjectPayload.getUserId());
+                logger.info("获取到的应用Token={}", applicationToken);
                 applicationE.setToken(applicationToken);
                 //设置GitLabProjectId
-                applicationE.initGitlabProjectE(ciApplicationE.getGitProjectId());
+                applicationE.initGitlabProjectE(newGitProjectId);
                 applicationE.initSynchro(true);
 
                 // set project hook id for application
-                setProjectHook(applicationE, ciApplicationE.getGitProjectId(), applicationToken, gitlabProjectPayload.getUserId());
+                setProjectHook(applicationE, newGitProjectId, applicationToken, gitlabProjectPayload.getUserId());
                 // 更新并校验
                 if (applicationRepository.update(applicationE) != 1) {
                     throw new CommonException(ERROR_UPDATE_APP);
@@ -684,6 +683,7 @@ public class ApplicationServiceImpl implements ApplicationService {
      * @return the application token that is stored in gitlab variables
      */
     private String getApplicationToken(Integer projectId, Integer userId) {
+        logger.info("获取应用， gitProjectId={}", projectId);
         List<Variable> variables = gitlabRepository.getVariable(projectId, userId);
         if (variables.isEmpty()) {
             String token = GenerateUUID.generateUUID();
@@ -721,6 +721,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             List<Integer> gitlabUserIds = userAttrRepository.listByUserIds(iamUserIds).stream()
                     .map(UserAttrE::getGitlabUserId).map(TypeUtil::objToInteger).collect(Collectors.toList());
 
+            logger.info("分配权限给项目成员，gitProjectId={}", devOpsAppPayload.getGitlabProjectId());
             gitlabUserIds.forEach(e -> {
                         GitlabMemberE gitlabMemberE = gitlabProjectRepository.getProjectMember(devOpsAppPayload.getGitlabProjectId(), TypeUtil.objToInteger(e));
                         if (gitlabMemberE == null || gitlabMemberE.getId() == null) {
@@ -759,6 +760,7 @@ public class ApplicationServiceImpl implements ApplicationService {
      * @param userId       the gitlab user id
      */
     private void setProjectHook(ApplicationE applicationE, Integer projectId, String token, Integer userId) {
+        logger.info("设置Git项目WebHook, gitProjectId={}", projectId);
         ProjectHook projectHook = ProjectHook.allHook();
         projectHook.setEnableSslVerification(true);
         projectHook.setProjectId(projectId);
