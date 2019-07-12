@@ -534,6 +534,10 @@ public class ApplicationServiceImpl implements ApplicationService {
                 int newGitProjectId = gitlabProjectPayload.getGitlabProjectId();
                 // 为项目下的成员分配对于此gitlab项目的权限
                 gitlabProjectPayload.setSkipCheckPermission(Boolean.TRUE);
+                //设置GitLabProjectId
+                applicationE.initGitlabProjectE(newGitProjectId);
+
+                logger.info("为用户设置gitlab权限， newGitProjectId={}", newGitProjectId);
                 operateGitlabMemberPermission(gitlabProjectPayload);
 
                 String oldToken = applicationE.getToken();
@@ -547,16 +551,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                     logger.warn("找不到项目Owner, 不进行设置变量和hook的操作");
                     return;
                 }
-
                 Integer gitOwnerUserId = TypeUtil.objToInteger(iamUserIds.get(0));
-                logger.info("将Token设置回Gitlab，oldToken={}, gitOwnerUserId={}", oldToken, gitOwnerUserId);
-                try {
-                    gitlabRepository.addVariable(newGitProjectId, "Token", oldToken, false, gitOwnerUserId);
-                } catch (Exception e) {
-                    logger.error("将Token设置回Gitlab出现错误", e);
-                }
-                //设置GitLabProjectId
-                applicationE.initGitlabProjectE(newGitProjectId);
 
                 // set project hook id for application
                 logger.info("将ProjectHook设置回Gitlab，oldToken={}, gitOwnerUserId={}", oldToken, gitOwnerUserId);
@@ -738,7 +733,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             List<Integer> gitlabUserIds = userAttrRepository.listByUserIds(iamUserIds).stream()
                     .map(UserAttrE::getGitlabUserId).map(TypeUtil::objToInteger).collect(Collectors.toList());
 
-            logger.info("分配权限给项目成员，gitProjectId={}", devOpsAppPayload.getGitlabProjectId());
+            logger.info("分配权限给项目成员，gitProjectId={}, gitlabUserIds={}", devOpsAppPayload.getGitlabProjectId(), StringUtils.join(gitlabUserIds.toArray()));
             gitlabUserIds.forEach(e -> {
                         GitlabMemberE gitlabMemberE = gitlabProjectRepository.getProjectMember(devOpsAppPayload.getGitlabProjectId(), TypeUtil.objToInteger(e));
                         if (gitlabMemberE == null || gitlabMemberE.getId() == null) {
