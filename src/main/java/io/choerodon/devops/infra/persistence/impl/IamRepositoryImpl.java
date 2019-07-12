@@ -23,6 +23,7 @@ import io.choerodon.devops.infra.dataobject.iam.ProjectDO;
 import io.choerodon.devops.infra.dataobject.iam.UserDO;
 import io.choerodon.devops.infra.feign.IamServiceClient;
 import io.choerodon.mybatis.pagehelper.domain.PageRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -262,6 +263,7 @@ public class IamRepositoryImpl implements IamRepository {
         List<Long> memberIds =
                 this.pagingQueryUsersByRoleIdOnProjectLevel(new PageRequest(), new RoleAssignmentSearchDTO(), memberId,
                         projectId, false).getContent().stream().map(UserDTO::getId).collect(Collectors.toList());
+        LOGGER.info("项目下所有项目成员, memberIds={}", (memberIds != null && memberIds.size() > 0) ? StringUtils.join(memberIds.toArray()) : StringUtils.EMPTY);
         // 项目下所有项目所有者
         List<Long> ownerIds =
                 this.pagingQueryUsersByRoleIdOnProjectLevel(new PageRequest(), new RoleAssignmentSearchDTO(), ownerId,
