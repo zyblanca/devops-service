@@ -243,6 +243,16 @@ public class IamRepositoryImpl implements IamRepository {
     }
 
     @Override
+    public List<Long> getAllOwnerIds(Long projectId) {
+        // 获取项目所有者id
+        Long ownerId = this.queryRoleIdByCode(PROJECT_OWNER);
+        // 项目下所有项目所有者
+        List<Long> ownerIds = this.pagingQueryUsersByRoleIdOnProjectLevel(new PageRequest(), new RoleAssignmentSearchDTO(), ownerId,
+                        projectId, false).getContent().stream().map(UserDTO::getId).collect(Collectors.toList());
+        return ownerIds;
+    }
+
+    @Override
     public List<Long> getAllMemberIdsWithoutOwner(Long projectId) {
         // 获取项目成员id
         Long memberId = this.queryRoleIdByCode(PROJECT_MEMBER);

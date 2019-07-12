@@ -53,6 +53,7 @@ import io.choerodon.websocket.tool.UUIDTool;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -535,15 +536,29 @@ public class ApplicationServiceImpl implements ApplicationService {
                 gitlabProjectPayload.setSkipCheckPermission(Boolean.TRUE);
                 operateGitlabMemberPermission(gitlabProjectPayload);
 
-                String applicationToken = getApplicationToken(newGitProjectId, gitlabProjectPayload.getUserId());
-                logger.info("获取到的应用Token={}", applicationToken);
-                applicationE.setToken(applicationToken);
+                String oldToken = applicationE.getToken();
+                if (StringUtils.isBlank(oldToken)) {
+                    logger.warn("应用记录token为空，不进行设置变量和hook的操作");
+                    return;
+                }
+
+                List<Long> iamUserIds = iamRepository.getAllOwnerIds(gitlabProjectPayload.getIamProjectId());
+                if (null == iamUserIds || iamUserIds.size() <= 0) {
+                    logger.warn("找不到项目Owner, 不进行设置变量和hook的操作");
+                    return;
+                }
+
+                Integer gitOwnerUserId = TypeUtil.objToInteger(iamUserIds.get(0));
+
+                logger.info("将Token设置回Gitlab，oldToken={}, gitOwnerUserId={}", oldToken, gitOwnerUserId);
+                gitlabRepository.addVariable(newGitProjectId, "Token", oldToken, false, gitOwnerUserId);
+
                 //设置GitLabProjectId
                 applicationE.initGitlabProjectE(newGitProjectId);
-                applicationE.initSynchro(true);
 
                 // set project hook id for application
-                setProjectHook(applicationE, newGitProjectId, applicationToken, gitlabProjectPayload.getUserId());
+                logger.info("将ProjectHook设置回Gitlab，oldToken={}, gitOwnerUserId={}", oldToken, gitOwnerUserId);
+                setProjectHook(applicationE, newGitProjectId, oldToken, gitOwnerUserId);
                 // 更新并校验
                 if (applicationRepository.update(applicationE) != 1) {
                     throw new CommonException(ERROR_UPDATE_APP);

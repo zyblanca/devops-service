@@ -51,6 +51,8 @@ public interface IamRepository {
 
     List<Long> getAllMemberIdsWithoutOwner(Long projectId);
 
+    List<Long> getAllOwnerIds(Long projectId);
+
     Boolean isProjectOwner(Long userId, ProjectE projectE);
 
     IamAppPayLoad createIamApp(Long organizationId, IamAppPayLoad iamAppPayLoad);
