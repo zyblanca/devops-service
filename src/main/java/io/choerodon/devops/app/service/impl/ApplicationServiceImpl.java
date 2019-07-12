@@ -549,10 +549,12 @@ public class ApplicationServiceImpl implements ApplicationService {
                 }
 
                 Integer gitOwnerUserId = TypeUtil.objToInteger(iamUserIds.get(0));
-
                 logger.info("将Token设置回Gitlab，oldToken={}, gitOwnerUserId={}", oldToken, gitOwnerUserId);
-                gitlabRepository.addVariable(newGitProjectId, "Token", oldToken, false, gitOwnerUserId);
-
+                try {
+                    gitlabRepository.addVariable(newGitProjectId, "Token", oldToken, false, gitOwnerUserId);
+                } catch (Exception e) {
+                    logger.error("将Token设置回Gitlab出现错误", e);
+                }
                 //设置GitLabProjectId
                 applicationE.initGitlabProjectE(newGitProjectId);
 
