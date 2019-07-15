@@ -1,5 +1,7 @@
 package io.choerodon.devops.infra.persistence.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import feign.FeignException;
 import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.core.exception.CommonException;
@@ -240,6 +242,7 @@ public class GitlabRepositoryImpl implements GitlabRepository {
             if (response != null) {
                 List<ProjectHook> list = response.getBody();
                 if (list != null && list.size() > 0) {
+                    logger.info("WebHook数据：{}", JSONArray.toJSONString(list));
                     return list;
                 }
             }
