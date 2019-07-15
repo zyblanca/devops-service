@@ -16,6 +16,8 @@ import io.choerodon.devops.infra.dataobject.gitlab.GitlabProjectDO;
 import io.choerodon.devops.infra.dataobject.gitlab.GroupDO;
 import io.choerodon.devops.infra.dataobject.gitlab.ImpersonationTokenDO;
 import io.choerodon.devops.infra.feign.GitlabServiceClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +29,7 @@ import java.util.List;
  */
 @Component
 public class GitlabRepositoryImpl implements GitlabRepository {
-
+    private static final Logger logger = LoggerFactory.getLogger(GitlabRepositoryImpl.class);
     private GitlabServiceClient gitlabServiceClient;
     private GitUtil gitUtil;
 
@@ -42,7 +44,7 @@ public class GitlabRepositoryImpl implements GitlabRepository {
     }
 
     @Override
-    public void batchAddVariable(Integer gitlabProjectId, Integer userId,  List<VariableDTO> variableDTOS) {
+    public void batchAddVariable(Integer gitlabProjectId, Integer userId, List<VariableDTO> variableDTOS) {
         gitlabServiceClient.batchAddVariable(gitlabProjectId, userId, variableDTOS);
     }
 
@@ -233,7 +235,16 @@ public class GitlabRepositoryImpl implements GitlabRepository {
     @Override
     public List<ProjectHook> getHooks(Integer projectId, Integer userId) {
         try {
-            return gitlabServiceClient.getProjectHook(projectId, userId).getBody();
+            logger.info("查询webhook");
+            ResponseEntity<List<ProjectHook>> response = gitlabServiceClient.getProjectHook(projectId, userId);
+            if (response != null) {
+                List<ProjectHook> list = response.getBody();
+                if (list != null && list.size() > 0) {
+                    return list;
+                }
+            }
+            logger.info("webhook为空");
+            return null;
         } catch (FeignException e) {
             throw new CommonException(e);
         }
