@@ -173,6 +173,9 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new CommonException("error.application.create.insert");
         }
         // 如果不跳过权限检查
+        if (applicationReqDTO.getIsSkipCheckPermission()) {
+            logger.warn("跳过权限检查，行云不在对成员授予权限, projectId={}, applicationName={}", projectId, applicationReqDTO.getName());
+        }
         List<Long> userIds = applicationReqDTO.getUserIds();
         if (!applicationReqDTO.getIsSkipCheckPermission() && userIds != null && !userIds.isEmpty()) {
             userIds.forEach(e -> appUserPermissionRepository.create(e, appId));
