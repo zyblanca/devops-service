@@ -1225,7 +1225,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         ApplicationE applicationE = applicationRepository.queryByCode(iamAppPayLoad.getCode(), iamAppPayLoad.getProjectId());
         if (applicationE == null) {
             applicationE = new ApplicationE();
-            applicationE.setIsSkipCheckPermission(false);
+            applicationE.setIsSkipCheckPermission(true);
             applicationE.setName(iamAppPayLoad.getName());
             applicationE.setCode(iamAppPayLoad.getCode());
             applicationE.initActive(true);
