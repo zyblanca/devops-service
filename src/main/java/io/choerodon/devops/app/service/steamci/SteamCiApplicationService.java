@@ -1,5 +1,6 @@
 package io.choerodon.devops.app.service.steamci;
 
+import io.choerodon.devops.api.dto.steamci.ApplicationPayload;
 import io.choerodon.devops.api.dto.steamci.PrivilegePayload;
 
 /**
@@ -15,4 +16,18 @@ public interface SteamCiApplicationService {
      * @param payload 权限实体类
      */
     void processPrivilege(PrivilegePayload payload);
+
+    /**
+     * 处理应用名称
+     *
+     * @param payload 应用实体类
+     */
+    void processName(ApplicationPayload payload);
+
+    /**
+     * 处理应用转态
+     *
+     * @param payload 应用实体类
+     */
+    void processStatus(ApplicationPayload payload);
 }

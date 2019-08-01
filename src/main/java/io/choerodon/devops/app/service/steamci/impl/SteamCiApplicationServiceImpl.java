@@ -1,6 +1,7 @@
 package io.choerodon.devops.app.service.steamci.impl;
 
 import io.choerodon.core.exception.CommonException;
+import io.choerodon.devops.api.dto.steamci.ApplicationPayload;
 import io.choerodon.devops.api.dto.steamci.PrivilegePayload;
 import io.choerodon.devops.app.service.steamci.SteamCiApplicationService;
 import io.choerodon.devops.domain.application.entity.AppUserPermissionE;
@@ -28,6 +29,8 @@ import java.util.List;
 @Service
 public class SteamCiApplicationServiceImpl implements SteamCiApplicationService {
     private static final Logger logger = LoggerFactory.getLogger(SteamCiApplicationServiceImpl.class);
+    private static final Integer APPLICATION_ENABLE = 1;
+
     @Autowired
     private IamRepository iamRepository;
     @Autowired
@@ -87,5 +90,31 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         List<Long> appIds = new ArrayList();
         appIds.add(applicationE.getId());
         appUserPermissionRepository.deleteByUserIdWithAppIds(appIds, userE.getId());
+    }
+
+    @Override
+    public void processName(ApplicationPayload payload) {
+        ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
+        if (null == applicationE) {
+            throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
+        }
+        ApplicationE updatingApp = new ApplicationE();
+        updatingApp.setId(applicationE.getId());
+        updatingApp.setName(applicationE.getName());
+        applicationRepository.update(updatingApp);
+    }
+
+    @Override
+    public void processStatus(ApplicationPayload payload) {
+        ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
+        if (null == applicationE) {
+            throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
+        }
+        ApplicationE updatingApp = new ApplicationE();
+        updatingApp.setId(applicationE.getId());
+        updatingApp.setActive(payload.getStatus().intValue() == APPLICATION_ENABLE.intValue());
+        applicationRepository.update(updatingApp);
+
+
     }
 }
