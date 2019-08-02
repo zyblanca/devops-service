@@ -44,12 +44,13 @@ public class SteamCiApplicationSagaHandler {
             sagaCode = SteamCiApplicationSagaHandler.APPLICATION_STATUS_SAGA_CODE,
             maxRetryCount = 1,
             seq = 1)
-    public void processStatus(String data) {
+    public String processStatus(String data) {
         logger.info("CI应用状态同步服务请求参数：{}", data);
         Gson gson = new Gson();
         ApplicationPayload payload = gson.fromJson(data, ApplicationPayload.class);
         steamCiApplicationService.processStatus(payload);
         logger.info("完成CI应用状态同步服务");
+        return data;
     }
 
     @SagaTask(code = "devopsServiceApplicationNameSync",
@@ -57,11 +58,12 @@ public class SteamCiApplicationSagaHandler {
             sagaCode = SteamCiApplicationSagaHandler.APPLICATION_NAME_SAGA_CODE,
             maxRetryCount = 1,
             seq = 1)
-    public void processName(String data) {
+    public String processName(String data) {
         logger.info("CI应用名称同步服务请求参数：{}", data);
         Gson gson = new Gson();
         ApplicationPayload payload = gson.fromJson(data, ApplicationPayload.class);
         steamCiApplicationService.processName(payload);
         logger.info("完成CI应用名称同步服务");
+        return data;
     }
 }
