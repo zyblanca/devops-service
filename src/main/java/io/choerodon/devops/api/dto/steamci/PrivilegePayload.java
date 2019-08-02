@@ -13,7 +13,6 @@ public class PrivilegePayload {
     private String applicationName;
     private Long steamProjectId;
     private Integer gitProjectId;
-    private Integer user;
     private String userName;
     private String accessLevel;
 
@@ -47,14 +46,6 @@ public class PrivilegePayload {
 
     public void setGitProjectId(Integer gitProjectId) {
         this.gitProjectId = gitProjectId;
-    }
-
-    public Integer getUser() {
-        return user;
-    }
-
-    public void setUser(Integer user) {
-        this.user = user;
     }
 
     public String getAccessLevel() {
