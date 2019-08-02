@@ -1,5 +1,6 @@
 package io.choerodon.devops.app.service.steamci.impl;
 
+import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.core.exception.CommonException;
 import io.choerodon.devops.api.dto.steamci.ApplicationPayload;
 import io.choerodon.devops.api.dto.steamci.PrivilegePayload;
@@ -10,6 +11,8 @@ import io.choerodon.devops.domain.application.entity.iam.UserE;
 import io.choerodon.devops.domain.application.repository.AppUserPermissionRepository;
 import io.choerodon.devops.domain.application.repository.ApplicationRepository;
 import io.choerodon.devops.domain.application.repository.IamRepository;
+import io.choerodon.devops.infra.dataobject.ApplicationDO;
+import io.choerodon.devops.infra.mapper.ApplicationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +36,8 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
 
     @Autowired
     private IamRepository iamRepository;
+    @Autowired
+    private ApplicationMapper applicationMapper;
     @Autowired
     private ApplicationRepository applicationRepository;
     @Autowired
@@ -98,10 +103,10 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         if (null == applicationE) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
-        ApplicationE updatingApp = new ApplicationE();
+        ApplicationDO updatingApp = new ApplicationDO();
         updatingApp.setId(applicationE.getId());
         updatingApp.setName(applicationE.getName());
-        applicationRepository.update(updatingApp);
+        applicationMapper.updateByPrimaryKeySelective(updatingApp);
     }
 
     @Override
@@ -110,11 +115,9 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         if (null == applicationE) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
-        ApplicationE updatingApp = new ApplicationE();
+        ApplicationDO updatingApp = new ApplicationDO();
         updatingApp.setId(applicationE.getId());
         updatingApp.setActive(payload.getStatus().intValue() == APPLICATION_ENABLE.intValue());
-        applicationRepository.update(updatingApp);
-
-
+        applicationMapper.updateByPrimaryKeySelective(updatingApp);
     }
 }
