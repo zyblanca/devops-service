@@ -103,10 +103,10 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         if (null == applicationE) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
-        logger.info("更新应用名称，applicationId={}，applicationName={}", applicationE.getId(), applicationE.getName());
+        logger.info("更新应用名称，applicationId={}，originalApplicationName={}, updatedApplicationName={}", applicationE.getId(), applicationE.getName(), payload.getApplicationName());
         ApplicationDO updatingApp = new ApplicationDO();
         updatingApp.setId(applicationE.getId());
-        updatingApp.setName(applicationE.getName());
+        updatingApp.setName(payload.getApplicationName());
         applicationMapper.updateByPrimaryKeySelective(updatingApp);
     }
 
@@ -116,10 +116,11 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         if (null == applicationE) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
-        logger.info("更新应用名称，applicationId={}，applicationName={}", applicationE.getId(), applicationE.getName());
+        boolean active = payload.getStatus().intValue() == APPLICATION_ENABLE.intValue();
+        logger.info("更新应用状态，applicationId={}，oldStatus={}, updatedStatus={}", applicationE.getId(), applicationE.getActive(), active);
         ApplicationDO updatingApp = new ApplicationDO();
         updatingApp.setId(applicationE.getId());
-        updatingApp.setActive(payload.getStatus().intValue() == APPLICATION_ENABLE.intValue());
+        updatingApp.setActive(active);
         applicationMapper.updateByPrimaryKeySelective(updatingApp);
     }
 }
