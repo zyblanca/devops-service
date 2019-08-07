@@ -47,4 +47,8 @@ public interface ApplicationMapper extends BaseMapper<ApplicationDO> {
     List<ApplicationDO> listByCode(@Param("code") String code);
 
     List<ApplicationDO> listByGitLabProjectIds(@Param("gitlabProjectIds") List<Long> gitlabProjectIds);
+
+    void updateApplicationName(@Param("applicationId") Long applicationId, @Param("applicationName") String applicationName);
+
+    void updateApplicationActive(@Param("applicationId") Long applicationId, @Param("active") int active);
 }
