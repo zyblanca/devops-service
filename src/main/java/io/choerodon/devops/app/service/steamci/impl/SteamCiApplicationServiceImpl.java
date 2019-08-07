@@ -103,6 +103,7 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         if (null == applicationE) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
+        logger.info("更新应用名称，applicationId={}，applicationName={}", applicationE.getId(), applicationE.getName());
         ApplicationDO updatingApp = new ApplicationDO();
         updatingApp.setId(applicationE.getId());
         updatingApp.setName(applicationE.getName());
@@ -115,6 +116,7 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
         if (null == applicationE) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
+        logger.info("更新应用名称，applicationId={}，applicationName={}", applicationE.getId(), applicationE.getName());
         ApplicationDO updatingApp = new ApplicationDO();
         updatingApp.setId(applicationE.getId());
         updatingApp.setActive(payload.getStatus().intValue() == APPLICATION_ENABLE.intValue());
