@@ -55,10 +55,12 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
     }
 
     private void updatePrivilege(PrivilegePayload payload) {
+        logger.info("查询应用，applicationCode={}， projectId={}", payload.getApplicationCode(), payload.getSteamProjectId());
         ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
         if (Objects.isNull(applicationE)) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
+        logger.info("查询用户，userName={}", payload.getUserName());
         UserE userE = iamRepository.queryByLoginName(payload.getUserName());
         if (Objects.isNull(userE)) {
             throw new CommonException(String.format("找不到用户, loginName=%s", payload.getUserName()));
