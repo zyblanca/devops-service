@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 持续集成应用业务服务实现类
@@ -55,13 +56,14 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
 
     private void updatePrivilege(PrivilegePayload payload) {
         ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
-        if (null == applicationE) {
+        if (Objects.isNull(applicationE)) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
         UserE userE = iamRepository.queryByLoginName(payload.getUserName());
-        if (null == userE) {
+        if (Objects.isNull(userE)) {
             throw new CommonException(String.format("找不到用户, loginName=%s", payload.getUserName()));
         }
+        logger.info("查询用户权限，applicationId={}", applicationE.getId());
         List<AppUserPermissionE> userPermissions = appUserPermissionRepository.listAll(applicationE.getId());
         if (CollectionUtils.isEmpty(userPermissions)) {
             logger.info("添加用户权限权限，applicationCode={}，loginName={}", payload.getApplicationCode(), payload.getUserName());
@@ -73,7 +75,7 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
                     targetUserPermission = userPermission;
                 }
             }
-            if (targetUserPermission == null) {
+            if (Objects.isNull(targetUserPermission)) {
                 logger.info("添加用户权限权限，applicationCode={}，loginName={}", payload.getApplicationCode(), payload.getUserName());
                 appUserPermissionRepository.create(userE.getId(), applicationE.getId());
             } else {
@@ -84,11 +86,11 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
 
     private void deletePrivilege(PrivilegePayload payload) {
         ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
-        if (null == applicationE) {
+        if (Objects.isNull(applicationE)) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
         UserE userE = iamRepository.queryByLoginName(payload.getUserName());
-        if (null == userE) {
+        if (Objects.isNull(userE)) {
             throw new CommonException(String.format("找不到用户, loginName=%s", payload.getUserName()));
         }
         logger.info("删除用户权限，applicationCode={}, projectId={}， loginName={}", payload.getApplicationCode(), payload.getSteamProjectId(), payload.getUserName());
@@ -100,7 +102,7 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
     @Override
     public void processName(ApplicationPayload payload) {
         ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
-        if (null == applicationE) {
+        if (Objects.isNull(applicationE)) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
         logger.info("更新应用名称，applicationId={}，originalApplicationName={}, updatedApplicationName={}", applicationE.getId(), applicationE.getName(), payload.getApplicationName());
@@ -110,7 +112,7 @@ public class SteamCiApplicationServiceImpl implements SteamCiApplicationService 
     @Override
     public void processStatus(ApplicationPayload payload) {
         ApplicationE applicationE = applicationRepository.queryByCode(payload.getApplicationCode(), payload.getSteamProjectId());
-        if (null == applicationE) {
+        if (Objects.isNull(applicationE)) {
             throw new CommonException(String.format("找不到应用, applicationCode=%s, projectId=%d", payload.getApplicationCode(), payload.getSteamProjectId()));
         }
         boolean active = (payload.getStatus().intValue() == APPLICATION_ENABLE.intValue());
