@@ -251,4 +251,16 @@
             #{gitlabProjectId}
         </foreach>
     </select>
+
+    <update id="updateApplicationName">
+        update devops_application
+        set name = #{applicationName}
+        where id = #{applicationId}
+    </update>
+
+    <update id="updateApplicationActive">
+        update devops_application
+        set is_active = #{active}
+        where id = #{applicationId}
+    </update>
 </mapper>

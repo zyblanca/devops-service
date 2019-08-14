@@ -173,6 +173,9 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new CommonException("error.application.create.insert");
         }
         // 如果不跳过权限检查
+        if (applicationReqDTO.getIsSkipCheckPermission()) {
+            logger.warn("跳过权限检查，行云不在对成员授予权限, projectId={}, applicationName={}", projectId, applicationReqDTO.getName());
+        }
         List<Long> userIds = applicationReqDTO.getUserIds();
         if (!applicationReqDTO.getIsSkipCheckPermission() && userIds != null && !userIds.isEmpty()) {
             userIds.forEach(e -> appUserPermissionRepository.create(e, appId));
@@ -588,7 +591,8 @@ public class ApplicationServiceImpl implements ApplicationService {
 
                 // 为项目下的成员分配对于此gitlab项目的权限
                 gitlabProjectPayload.setGitlabProjectId(ciApplicationE.getGitProjectId());
-                operateGitlabMemberPermission(gitlabProjectPayload);
+                logger.info("DevopsCI应用存在，不进行Gitlab权限的设置，applicationCode={}, applicationName={}", ciApplicationE.getCode(), ciApplicationE.getName());
+                //operateGitlabMemberPermission(gitlabProjectPayload);
 
                 String applicationToken = getApplicationToken(ciApplicationE.getGitProjectId(), gitlabProjectPayload.getUserId());
                 applicationE.setToken(applicationToken);
@@ -618,9 +622,9 @@ public class ApplicationServiceImpl implements ApplicationService {
                     gitlabProjectPayload.getUserId(), false);
         }
         gitlabProjectPayload.setGitlabProjectId(gitlabProjectDO.getId());
-
+        logger.info("DevopsCI应用不存在，不进行Gitlab权限的设置，applicationCode={}, applicationName={}", applicationE.getCode(), applicationE.getName());
         // 为项目下的成员分配对于此gitlab项目的权限
-        operateGitlabMemberPermission(gitlabProjectPayload);
+        //operateGitlabMemberPermission(gitlabProjectPayload);
 
         if (applicationE.getApplicationTemplateE() != null) {
             ApplicationTemplateE applicationTemplateE = applicationTemplateRepository.query(
@@ -1232,6 +1236,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                 applicationE.setType("test");
             }
             applicationE = applicationRepository.create(applicationE);
+            logger.info("创建DevopsService应用, code={}, name={}", applicationE.getCode(), applicationE.getName());
         } else {
             //创建iam入口过来的应用直接跳过权限校验，从devops入口过来的应用选择了特定用户权限，需要给特定用户分配该用户权限
             if (!applicationE.getIsSkipCheckPermission()) {
