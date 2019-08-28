@@ -471,12 +471,14 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
 
         String projectName = gitlabProjectPayload.getPath() + UUID.randomUUID().toString().substring(0, 5);
+        System.out.println("project name: "+projectName);
         GitlabProjectDO gitlabProjectDO = gitlabRepository.getProjectByName(organization.getCode()
                 + "-" + projectE.getCode() + "-gitops", projectName, gitlabProjectPayload.getUserId());
         if (gitlabProjectDO.getId() == null) {
+            System.out.println("project name: "+projectName);
             gitlabProjectDO = gitlabRepository.createProject(
                     gitlabProjectPayload.getGroupId(),
-                    gitlabProjectPayload.getPath(),
+                    projectName,
                     gitlabProjectPayload.getUserId(),
                     false);
         }
