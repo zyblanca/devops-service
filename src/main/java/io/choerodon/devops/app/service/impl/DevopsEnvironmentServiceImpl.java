@@ -429,7 +429,8 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         DevopsEnvironmentE devopsEnvironmentE = DevopsEnvironmentFactory.createDevopsEnvironmentE();
         DevopsClusterE devopsClusterE = devopsClusterRepository.query(clusterId);
         devopsEnvironmentE.initProjectE(projectId);
-        devopsEnvironmentE.initDevopsClusterEById(clusterId);
+        //TODO 暂时取消根据clusterID查询，项目下的环境code不允许重复
+        //devopsEnvironmentE.initDevopsClusterEById(clusterId);
         devopsEnvironmentE.setCode(code);
         if (devopsClusterE.getNamespaces() != null) {
             JSONArray.parseArray(devopsClusterE.getNamespaces(), String.class).forEach(namespace -> {
@@ -470,13 +471,12 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         ProjectE projectE = iamRepository.queryIamProject(gitlabGroupE.getProjectE().getId());
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
 
-        String projectName = devopsEnvironmentE.getCode() + "-" + devopsEnvironmentE.getId();
         GitlabProjectDO gitlabProjectDO = gitlabRepository.getProjectByName(organization.getCode()
-                + "-" + projectE.getCode() + "-gitops", projectName, gitlabProjectPayload.getUserId());
+                + "-" + projectE.getCode() + "-gitops", devopsEnvironmentE.getCode(), gitlabProjectPayload.getUserId());
         if (gitlabProjectDO.getId() == null) {
             gitlabProjectDO = gitlabRepository.createProject(
                     gitlabProjectPayload.getGroupId(),
-                    projectName,
+                    gitlabProjectPayload.getPath(),
                     gitlabProjectPayload.getUserId(),
                     false);
         }
