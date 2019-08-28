@@ -475,7 +475,7 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         if (gitlabProjectDO.getId() == null) {
             gitlabProjectDO = gitlabRepository.createProject(
                     gitlabProjectPayload.getGroupId(),
-                    gitlabProjectPayload.getPath(),
+                    gitlabProjectPayload.getPath() + UUID.randomUUID().toString().substring(0, 5),
                     gitlabProjectPayload.getUserId(),
                     false);
         }
