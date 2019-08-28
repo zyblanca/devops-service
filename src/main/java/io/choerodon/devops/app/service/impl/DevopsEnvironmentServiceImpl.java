@@ -429,8 +429,7 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         DevopsEnvironmentE devopsEnvironmentE = DevopsEnvironmentFactory.createDevopsEnvironmentE();
         DevopsClusterE devopsClusterE = devopsClusterRepository.query(clusterId);
         devopsEnvironmentE.initProjectE(projectId);
-        //TODO 暂时取消根据clusterID查询，项目下的环境code不允许重复
-        //devopsEnvironmentE.initDevopsClusterEById(clusterId);
+        devopsEnvironmentE.initDevopsClusterEById(clusterId);
         devopsEnvironmentE.setCode(code);
         if (devopsClusterE.getNamespaces() != null) {
             JSONArray.parseArray(devopsClusterE.getNamespaces(), String.class).forEach(namespace -> {
