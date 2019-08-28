@@ -155,7 +155,7 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         GitlabProjectPayload gitlabProjectPayload = new GitlabProjectPayload();
         gitlabProjectPayload.setGroupId(TypeUtil.objToInteger(gitlabGroupE.getDevopsEnvGroupId()));
         gitlabProjectPayload.setUserId(TypeUtil.objToInteger(userAttrE.getGitlabUserId()));
-        gitlabProjectPayload.setPath(devopsEnviromentDTO.getCode() + "-" + devopsEnvironmentE.getId());
+        gitlabProjectPayload.setPath(devopsEnviromentDTO.getCode());
         gitlabProjectPayload.setOrganizationId(null);
         gitlabProjectPayload.setType(ENV);
         UserE userE = iamRepository.queryUserByUserId(userAttrE.getIamUserId());
@@ -470,12 +470,13 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         ProjectE projectE = iamRepository.queryIamProject(gitlabGroupE.getProjectE().getId());
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
 
+        String projectName = devopsEnvironmentE.getCode() + "-" + devopsEnvironmentE.getId();
         GitlabProjectDO gitlabProjectDO = gitlabRepository.getProjectByName(organization.getCode()
-                + "-" + projectE.getCode() + "-gitops", devopsEnvironmentE.getCode(), gitlabProjectPayload.getUserId());
+                + "-" + projectE.getCode() + "-gitops", projectName, gitlabProjectPayload.getUserId());
         if (gitlabProjectDO.getId() == null) {
             gitlabProjectDO = gitlabRepository.createProject(
                     gitlabProjectPayload.getGroupId(),
-                    gitlabProjectPayload.getPath(),
+                    projectName,
                     gitlabProjectPayload.getUserId(),
                     false);
         }
