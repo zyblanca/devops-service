@@ -947,7 +947,7 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
                             GitlabGroupE gitlabGroupE = devopsProjectRepository.queryDevopsProject(projectE.getId());
                             gitlabProjectPayload.setGroupId(TypeUtil.objToInteger(gitlabGroupE.getDevopsEnvGroupId()));
                             gitlabProjectPayload.setUserId(ADMIN);
-                            gitlabProjectPayload.setPath(devopsEnvironmentE.getCode());
+                            gitlabProjectPayload.setPath(devopsEnvironmentE.getCode() + "-" + devopsEnvironmentE.getId());
                             gitlabProjectPayload.setOrganizationId(null);
                             gitlabProjectPayload.setType(ENV);
                             devopsEnvironmentService.handleCreateEnvSaga(gitlabProjectPayload);
