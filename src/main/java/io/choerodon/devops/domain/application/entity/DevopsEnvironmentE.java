@@ -17,6 +17,7 @@ public class DevopsEnvironmentE {
     private ProjectE projectE;
     private DevopsClusterE clusterE;
     private Long gitlabEnvProjectId;
+    private String gitlabEnvProjectPath;
     private Long devopsEnvGroupId;
     private Long hookId;
     private String envIdRsa;
@@ -80,6 +81,14 @@ public class DevopsEnvironmentE {
     public DevopsEnvironmentE(Long id, String code) {
         this.id = id;
         this.code = code;
+    }
+
+    public String getGitlabEnvProjectPath() {
+        return gitlabEnvProjectPath;
+    }
+
+    public void setGitlabEnvProjectPath(String gitlabEnvProjectPath) {
+        this.gitlabEnvProjectPath = gitlabEnvProjectPath;
     }
 
     public Long getId() {

@@ -217,7 +217,7 @@ public class DeployServiceImpl implements DeployService {
         List<GitEnvConfigDTO> gitEnvConfigDTOS = new ArrayList<>();
         ProjectE projectE = iamRepository.queryIamProject(devopsEnvironmentE.getProjectE().getId());
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
-        String repoUrl = GitUtil.getGitlabSshUrl(pattern, gitlabSshUrl, organization.getCode(), projectE.getCode(), devopsEnvironmentE.getCode());
+        String repoUrl = GitUtil.getGitlabSshUrl(pattern, gitlabSshUrl, organization.getCode(), projectE.getCode(), devopsEnvironmentE.getGitlabEnvProjectPath());
 
         GitEnvConfigDTO gitEnvConfigDTO = new GitEnvConfigDTO();
         gitEnvConfigDTO.setEnvId(devopsEnvironmentE.getId());

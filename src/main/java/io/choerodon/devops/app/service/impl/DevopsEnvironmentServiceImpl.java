@@ -149,6 +149,8 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         devopsEnvironmentE.setEnvIdRsaPub(sshKeys.get(1));
         Long envId = devopsEnviromentRepository.create(devopsEnvironmentE).getId();
         devopsEnvironmentE.setId(envId);
+        devopsEnvironmentE.setGitlabEnvProjectPath(devopsEnviromentDTO.getCode() + "-" + envId);
+        devopsEnviromentRepository.update(devopsEnvironmentE);
 
         GitlabGroupE gitlabGroupE = devopsProjectRepository.queryDevopsProject(projectId);
         UserAttrE userAttrE = userAttrRepository.queryById(TypeUtil.objToLong(GitUserNameUtil.getUserId()));
@@ -156,6 +158,7 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         gitlabProjectPayload.setGroupId(TypeUtil.objToInteger(gitlabGroupE.getDevopsEnvGroupId()));
         gitlabProjectPayload.setUserId(TypeUtil.objToInteger(userAttrE.getGitlabUserId()));
         gitlabProjectPayload.setPath(devopsEnviromentDTO.getCode());
+        gitlabProjectPayload.setGitlabProjectPath(devopsEnvironmentE.getGitlabEnvProjectPath());
         gitlabProjectPayload.setOrganizationId(null);
         gitlabProjectPayload.setType(ENV);
         UserE userE = iamRepository.queryUserByUserId(userAttrE.getIamUserId());
@@ -471,11 +474,11 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
 
         GitlabProjectDO gitlabProjectDO = gitlabRepository.getProjectByName(organization.getCode()
-                + "-" + projectE.getCode() + "-gitops", devopsEnvironmentE.getCode(), gitlabProjectPayload.getUserId());
+                + "-" + projectE.getCode() + "-gitops", devopsEnvironmentE.getGitlabEnvProjectPath(), gitlabProjectPayload.getUserId());
         if (gitlabProjectDO.getId() == null) {
             gitlabProjectDO = gitlabRepository.createProject(
                     gitlabProjectPayload.getGroupId(),
-                    gitlabProjectPayload.getPath(),
+                    devopsEnvironmentE.getGitlabEnvProjectPath(),
                     gitlabProjectPayload.getUserId(),
                     false);
         }
@@ -483,7 +486,7 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         if (gitlabRepository.getDeployKeys(gitlabProjectDO.getId(), gitlabProjectPayload.getUserId()).isEmpty()) {
             gitlabRepository.createDeployKey(
                     gitlabProjectDO.getId(),
-                    gitlabProjectPayload.getPath(),
+                    devopsEnvironmentE.getGitlabEnvProjectPath(),
                     devopsEnvironmentE.getEnvIdRsaPub(),
                     true,
                     gitlabProjectPayload.getUserId());
@@ -565,7 +568,7 @@ public class DevopsEnvironmentServiceImpl implements DevopsEnvironmentService {
         gitlabUrl = gitlabUrl.endsWith("/") ? gitlabUrl.substring(0, gitlabUrl.length() - 1) : gitlabUrl;
         envSyncStatusDTO.setCommitUrl(String.format("%s/%s-%s-gitops/%s/commit/",
                 gitlabUrl, organization.getCode(), projectE.getCode(),
-                devopsEnvironmentE.getCode()));
+                devopsEnvironmentE.getGitlabEnvProjectPath()));
         return envSyncStatusDTO;
     }
 

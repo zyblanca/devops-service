@@ -910,7 +910,7 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
             devopsEnvironmentES.forEach(devopsEnvironmentE -> {
                 gitUtil.setSshKey(devopsEnvironmentE.getEnvIdRsa());
                 if (devopsEnvironmentE.getGitlabEnvProjectId() != null) {
-                    LOGGER.info("{}:{}  begin to upgrade!", devopsEnvironmentE.getCode(), devopsEnvironmentE.getId());
+                    LOGGER.info("{}:{}  begin to upgrade!", devopsEnvironmentE.getGitlabEnvProjectPath(), devopsEnvironmentE.getId());
                     String filePath;
                     try {
                         filePath = envUtil.handDevopsEnvGitRepository(devopsEnvironmentE);
@@ -939,7 +939,7 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
                                     .queryOrganizationById(projectE.getOrganization().getId());
                             //generate rsa key
                             List<String> sshKeys = FileUtil.getSshKey(String.format("%s/%s/%s",
-                                    organization.getCode(), projectE.getCode(), devopsEnvironmentE.getCode()));
+                                    organization.getCode(), projectE.getCode(), devopsEnvironmentE.getGitlabEnvProjectPath()));
                             devopsEnvironmentE.setEnvIdRsa(sshKeys.get(0));
                             devopsEnvironmentE.setEnvIdRsaPub(sshKeys.get(1));
                             devopsEnvironmentRepository.update(devopsEnvironmentE);
@@ -948,6 +948,7 @@ public class DevopsCheckLogServiceImpl implements DevopsCheckLogService {
                             gitlabProjectPayload.setGroupId(TypeUtil.objToInteger(gitlabGroupE.getDevopsEnvGroupId()));
                             gitlabProjectPayload.setUserId(ADMIN);
                             gitlabProjectPayload.setPath(devopsEnvironmentE.getCode());
+                            gitlabProjectPayload.setGitlabProjectPath(devopsEnvironmentE.getGitlabEnvProjectPath());
                             gitlabProjectPayload.setOrganizationId(null);
                             gitlabProjectPayload.setType(ENV);
                             devopsEnvironmentService.handleCreateEnvSaga(gitlabProjectPayload);

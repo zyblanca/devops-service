@@ -21,6 +21,7 @@ public class DevopsEnvironmentDO extends AuditDomain {
     private Long projectId;
     private Long clusterId;
     private Long gitlabEnvProjectId;
+    private String gitlabEnvProjectPath;
     private Long hookId;
     private String envIdRsa;
     private String envIdRsaPub;
@@ -36,6 +37,14 @@ public class DevopsEnvironmentDO extends AuditDomain {
     private Long agentSyncCommit;
     private Boolean isSynchro;
     private Boolean isFailed;
+
+    public String getGitlabEnvProjectPath() {
+        return gitlabEnvProjectPath;
+    }
+
+    public void setGitlabEnvProjectPath(String gitlabEnvProjectPath) {
+        this.gitlabEnvProjectPath = gitlabEnvProjectPath;
+    }
 
     public Long getId() {
         return id;

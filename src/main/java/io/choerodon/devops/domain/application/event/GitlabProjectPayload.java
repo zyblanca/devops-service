@@ -9,6 +9,7 @@ public class GitlabProjectPayload {
 
     private Integer userId;
     private String path;
+    private String gitlabProjectPath;
     private Integer gitlabProjectId;
     private Integer groupId;
     private String type;
@@ -18,6 +19,14 @@ public class GitlabProjectPayload {
     private String realName;
     private Long clusterId;
     private Long iamProjectId;
+
+    public String getGitlabProjectPath() {
+        return gitlabProjectPath;
+    }
+
+    public void setGitlabProjectPath(String gitlabProjectPath) {
+        this.gitlabProjectPath = gitlabProjectPath;
+    }
 
     public Integer getUserId() {
         return userId;
