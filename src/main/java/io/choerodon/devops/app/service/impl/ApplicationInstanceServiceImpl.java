@@ -7,6 +7,7 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -490,6 +491,7 @@ public class ApplicationInstanceServiceImpl implements ApplicationInstanceServic
                 envId);
         DevopsEnvironmentE devopsEnvironmentE = devopsEnvironmentRepository
                 .queryById(envId);
+        System.out.println("+++++++++ devopsEnvironmentE:"+ JSON.toJSONString(devopsEnvironmentE));
         envUtil.checkEnvConnection(devopsEnvironmentE.getClusterE().getId(), envListener);
         return devopsEnvironmentE;
     }

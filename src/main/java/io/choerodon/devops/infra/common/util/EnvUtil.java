@@ -159,12 +159,14 @@ public class EnvUtil {
         ProjectE projectE = iamRepository.queryIamProject(devopsEnvironmentE.getProjectE().getId());
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
         //本地路径
+        System.out.println("+++++++++gitlab path:"+devopsEnvironmentE.getGitlabEnvProjectPath());
         String path = String.format("gitops/%s/%s/%s",
                 organization.getCode(), projectE.getCode(), devopsEnvironmentE.getGitlabEnvProjectPath());
+        System.out.println("+++++++++ path:"+path);
         //生成环境git仓库ssh地址
         String url = GitUtil.getGitlabSshUrl(pattern, gitlabSshUrl, organization.getCode(),
                 projectE.getCode(), devopsEnvironmentE.getGitlabEnvProjectPath());
-
+        System.out.println("+++++++++ url:"+url);
         File file = new File(path);
         gitUtil.setSshKey(devopsEnvironmentE.getEnvIdRsa());
         if (!file.exists()) {
