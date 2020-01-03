@@ -13,6 +13,14 @@ spring:
     multipart:
       max-file-size: 30MB
       max-request-size: 30MB
+  rabbitmq:
+    host: 10.0.49.90
+    port: 8072
+    username: pipeline
+    password: pipeline
+    publisher-confirms: true
+    virtual-host: pipeline
+
 services:
   harbor:
     baseUrl: "harbor.example.com"
