@@ -84,7 +84,7 @@
     <dependencies>
         <dependency>
             <groupId>com.crc.crcloud.steam</groupId>
-            <artifactId>steam-starter-rabbitmq</artifactId>
+            <artifactId>steam-starter-pipeline</artifactId>
             <version>${steam.starters.version}</version>
         </dependency>
         <dependency>

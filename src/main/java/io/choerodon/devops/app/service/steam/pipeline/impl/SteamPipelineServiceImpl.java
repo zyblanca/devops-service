@@ -1,9 +1,9 @@
 package io.choerodon.devops.app.service.steam.pipeline.impl;
 
-import com.crc.crcloud.starter.rabbitmq.common.MessageType;
-import com.crc.crcloud.starter.rabbitmq.common.RabbitConstants;
-import com.crc.crcloud.starter.rabbitmq.dto.MessageDTO;
-import com.crc.crcloud.starter.rabbitmq.service.SendMsgService;
+import com.crc.crcloud.starter.pipeline.common.PipelineConstants;
+import com.crc.crcloud.starter.pipeline.common.PipelineMessage;
+import com.crc.crcloud.starter.pipeline.common.PipelineMessageType;
+import com.crc.crcloud.starter.pipeline.service.PipelineMsgService;
 import io.choerodon.devops.api.dto.PushWebHookDTO;
 import io.choerodon.devops.app.service.steam.pipeline.SteamPipelineService;
 import org.slf4j.Logger;
@@ -22,15 +22,15 @@ public class SteamPipelineServiceImpl implements SteamPipelineService {
     private static final Logger logger = LoggerFactory.getLogger(SteamPipelineServiceImpl.class);
 
     @Autowired
-    SendMsgService sendMsgService;
+    PipelineMsgService pipelineMsgService;
 
     @Override
     public void sendGitLabWebHook(PushWebHookDTO pushWebHookDTO) {
-        MessageDTO<PushWebHookDTO> messageDTO = new MessageDTO<>();
-        messageDTO.setType(MessageType.GIT_LAB.getCode());
+        PipelineMessage<PushWebHookDTO> messageDTO = new PipelineMessage<>();
+        messageDTO.setType(PipelineMessageType.GIT_LAB.getBizCode());
         messageDTO.setData(pushWebHookDTO);
         try {
-            sendMsgService.sendMsg(messageDTO, RabbitConstants.PIPELINE_GIT_LAB_QUEUE);
+            pipelineMsgService.sendMsg(messageDTO, PipelineConstants.PIPELINE_GIT_LAB_QUEUE);
         } catch (Exception e) {
             logger.error("发送Gitlab回调信息出现错误", e);
         }
