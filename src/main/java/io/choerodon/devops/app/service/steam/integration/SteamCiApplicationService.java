@@ -1,4 +1,4 @@
-package io.choerodon.devops.app.service.steamci;
+package io.choerodon.devops.app.service.steam.integration;
 
 import io.choerodon.devops.api.dto.steamci.ApplicationPayload;
 import io.choerodon.devops.api.dto.steamci.PrivilegePayload;

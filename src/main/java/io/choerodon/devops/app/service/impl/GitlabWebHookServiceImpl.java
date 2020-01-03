@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.choerodon.devops.app.service.*;
+import io.choerodon.devops.app.service.steam.pipeline.SteamPipelineService;
 import io.choerodon.devops.infra.common.util.FastjsonParserConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,14 +25,16 @@ public class GitlabWebHookServiceImpl implements GitlabWebHookService {
     private DevopsGitlabCommitService devopsGitlabCommitService;
     private DevopsGitlabPipelineService devopsGitlabPipelineService;
     private DevOpsCIService devOpsCIService;
+    private SteamPipelineService steamPipelineService;
 
     public GitlabWebHookServiceImpl(DevopsMergeRequestRepository devopsMergeRequestRepository, DevopsGitService devopsGitService, DevopsGitlabCommitService devopsGitlabCommitService,
-                                    DevopsGitlabPipelineService devopsGitlabPipelineService, DevOpsCIService devOpsCIService) {
+                                    DevopsGitlabPipelineService devopsGitlabPipelineService, DevOpsCIService devOpsCIService, SteamPipelineService steamPipelineService) {
         this.devopsMergeRequestRepository = devopsMergeRequestRepository;
         this.devopsGitService = devopsGitService;
         this.devopsGitlabPipelineService = devopsGitlabPipelineService;
         this.devopsGitlabCommitService = devopsGitlabCommitService;
         this.devOpsCIService = devOpsCIService;
+        this.steamPipelineService = steamPipelineService;
     }
 
     @Override
@@ -57,6 +60,7 @@ public class GitlabWebHookServiceImpl implements GitlabWebHookService {
                 devopsGitService.branchSync(pushWebHookDTO, token);
                 devopsGitlabCommitService.create(pushWebHookDTO, token);
                 devOpsCIService.getRepositorySize(pushWebHookDTO.getProject());
+                steamPipelineService.sendGitLabWebHook(pushWebHookDTO);
                 break;
             case "pipeline":
                 PipelineWebHookDTO pipelineWebHookDTO = JSONArray.parseObject(body, PipelineWebHookDTO.class, FastjsonParserConfigProvider.getParserConfig());
