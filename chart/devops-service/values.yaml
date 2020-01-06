@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: registry.devops.crc.com.cn/choerodon-devops/devops-service
+  repository: registry.steam.crcloud.com/crcsoft-devcloud/devops-service
   pullPolicy: Always
 
 preJob:
@@ -30,30 +30,31 @@ deployment:
 
 env:
   open:
-    SPRING_REDIS_HOST: devops-redis.devops.svc
+    SPRING_REDIS_HOST: steam-redis.steam-uat.svc
+    SPRING_REDIS_DATABASE: 11
     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://register-server.io-choerodon:8000/eureka/
-    SPRING_DATASOURCE_URL: jdbc:mysql://mysql.db.svc:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
-    SPRING_DATASOURCE_USERNAME: root
-    SPRING_DATASOURCE_PASSWORD: choerodon
+    SPRING_DATASOURCE_URL: jdbc:mysql://10.201.103.10:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    SPRING_DATASOURCE_USERNAME: steamuat
+    SPRING_DATASOURCE_PASSWORD: steamuat!23
     SPRING_RABBITMQ_HOST: steam-rabbitmq-rabbitmq-new.steam-uat
     SPRING_RABBITMQ_PORT: 5672
     SPRING_RABBITMQ_USERNAME: pipeline
     SPRING_RABBITMQ_PASSWORD: pipeline
     SPRING_RABBITMQ_VIRTUAL_HOST: pipeline
-    SPRING_CLOUD_CONFIG_URI: http://config-server.framework:8010/
+    SPRING_CLOUD_CONFIG_URI: http://config-server.steam-uat:8010/
     SPRING_CLOUD_CONFIG_ENABLED: true
     SERVICES_GITLAB_URL: http://git.choerodon.com.cn
     SERVICES_GITLAB_SSHURL: git@choerodon.com.cn
-    SERVICES_GITLAB_PASSWORD: abc123456
+    SERVICES_GITLAB_PASSWORD: steam123
     SERVICES_GITLAB_PROJECTLIMIT: 100
-    SERVICES_HELM_URL: helm.example.com
-    SERVICES_HARBOR_BASEURL: https://registry.choerodon.com.cn
-    SERVICES_HARBOR_USERNAME:  admin
-    SERVICES_HARBOR_PASSWORD:
+    SERVICES_HELM_URL: chart.steamuat.crcloud.com
+    SERVICES_HARBOR_BASEURL: http://registry.steamuat.crcloud.com
+    SERVICES_HARBOR_USERNAME: admin
+    SERVICES_HARBOR_PASSWORD: Devops123
     # harbor insecure skip tls verify, the default is false
     SERVICES_HARBOR_INSECURESKIPTLSVERIFY: false
     SERVICES_SONARQUBE_URL:
-    SERVICES_GATEWAY_URL: http://api.example.com
+    SERVICES_GATEWAY_URL: http://api.steamuat.crcloud.com
     AGENT_VERSION: 0.5.0.RELEASE
     SECURITY_BASIC_ENABLE: false
     SECURITY_IGNORED: /ci,/webhook,/v2/api-docs,/agent/**,/ws/**,/webhook/**
@@ -61,7 +62,7 @@ env:
     AGENT_REPOURL: https://openchart.choerodon.com.cn/choerodon/c7n/
     AGENT_CERTMANAGERURL: https://openchart.choerodon.com.cn/choerodon/infra/
     CERT_TESTCERT: false
-    TEMPLATE_VERSION: 0.13.0
+    TEMPLATE_VERSION: 0.15.0
     TEMPLATE_URL: https://github.com/choerodon/choerodon-devops-templates.git
 #    SKYWALKING_OPTS: >-
 #          -javaagent:/agent/skywalking-agent.jar

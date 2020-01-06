@@ -101,3 +101,7 @@ logging:
   level:
     io.choerodon.event.consumer: debug
   config: classpath:logback-spring.xml
+
+steam:
+  rabbitmq:
+    enable: false
