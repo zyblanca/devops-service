@@ -106,4 +106,4 @@ resources:
 
 ingress:
   enable: false
-  host: devops-service.choerodon.com.cn
+  host: devops.steamuat.crcloud.com
