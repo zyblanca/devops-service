@@ -12,14 +12,14 @@ preJob:
   timeout: 1200
   image: registry.steam.crcloud.com/tools/dbtool:0.6.1
   preConfig:
-    enable: true
+    enable: false
     configFile: application.yml
     datasource:
       url: jdbc:mysql://10.201.103.10:3306/manager_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
       username: steamuat
       password: steamuat!23
   preInitDB:
-    enable: true
+    enable: false
     datasource:
       url: jdbc:mysql://10.201.103.10:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
       username: steamuat
