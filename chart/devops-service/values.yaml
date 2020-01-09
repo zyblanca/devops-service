@@ -77,7 +77,7 @@ logs:
   parser: spring-boot
 
 persistence:
-  enabled: true
+  enabled: false
   existingClaim: chartmuseum-pvc
   subPath:
   ## A manually managed Persistent Volume and Claim
