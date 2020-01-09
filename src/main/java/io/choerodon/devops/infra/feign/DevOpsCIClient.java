@@ -7,7 +7,7 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(value = "devops-ci-backend", fallback = DevOpsCIClientFallback.class)
+@FeignClient(value = "devops-ci", fallback = DevOpsCIClientFallback.class)
 public interface DevOpsCIClient {
 
     @GetMapping("/v1/git/groups/{groupName}/statistic/size")
