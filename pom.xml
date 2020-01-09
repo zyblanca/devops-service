@@ -14,17 +14,17 @@
         <version>0.8.0.RELEASE</version>
     </parent>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.crc.crcloud.steam</groupId>
-                <artifactId>steam-starter-parent</artifactId>
-                <version>0.1.0.RELEASE</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+<!--    <dependencyManagement>-->
+<!--        <dependencies>-->
+<!--            <dependency>-->
+<!--                <groupId>com.crc.crcloud.steam</groupId>-->
+<!--                <artifactId>steam-starter-parent</artifactId>-->
+<!--                <version>0.1.0.RELEASE</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
+<!--        </dependencies>-->
+<!--    </dependencyManagement>-->
 
     <build>
         <finalName>app</finalName>
@@ -82,11 +82,11 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.crc.crcloud.steam</groupId>
-            <artifactId>steam-starter-pipeline</artifactId>
-            <version>${steam.starters.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.crc.crcloud.steam</groupId>-->
+<!--            <artifactId>steam-starter-pipeline</artifactId>-->
+<!--            <version>${steam.starters.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.choerodon</groupId>
             <artifactId>choerodon-starter-swagger</artifactId>
