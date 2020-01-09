@@ -5,58 +5,64 @@
 replicaCount: 1
 
 image:
-  repository: registry.devops.crc.com.cn/choerodon-devops/devops-service
+  repository: registry.steam.crcloud.com/crcsoft-devcloud/devops-service
   pullPolicy: Always
 
 preJob:
   timeout: 1200
-  image: registry.devops.crc.com.cn/choerodon-tools/dbtool:0.6.1
+  image: registry.steam.crcloud.com/tools/dbtool:0.6.1
   preConfig:
     enable: true
     configFile: application.yml
     datasource:
-      url: jdbc:mysql://localhost:3306/manager_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
-      username: username
-      password: password
+      url: jdbc:mysql://10.201.103.10:3306/manager_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      username: steamuat
+      password: steamuat!23
   preInitDB:
     enable: true
     datasource:
-      url: jdbc:mysql://localhost:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
-      username: username
-      password: password
+      url: jdbc:mysql://10.201.103.10:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
+      username: steamuat
+      password: steamuat!23
 
 deployment:
   managementPort: 8060
 
 env:
   open:
-    SPRING_REDIS_HOST: devops-redis.devops.svc
-    EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://register-server.io-choerodon:8000/eureka/
-    SPRING_DATASOURCE_URL: jdbc:mysql://mysql.db.svc:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
-    SPRING_DATASOURCE_USERNAME: root
-    SPRING_DATASOURCE_PASSWORD: choerodon
-    SPRING_CLOUD_CONFIG_URI: http://config-server.framework:8010/
+    SPRING_REDIS_HOST: steam-redis.steam-uat.svc
+    SPRING_REDIS_DATABASE: 11
+    EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://register-server.steam-uat:8000/eureka/
+    SPRING_DATASOURCE_URL: jdbc:mysql://10.201.103.10:3306/devops_service?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    SPRING_DATASOURCE_USERNAME: steamuat
+    SPRING_DATASOURCE_PASSWORD: steamuat!23
+    SPRING_RABBITMQ_HOST: steam-rabbitmq-rabbitmq-new.steam-uat
+    SPRING_RABBITMQ_PORT: 5672
+    SPRING_RABBITMQ_USERNAME: pipeline
+    SPRING_RABBITMQ_PASSWORD: pipeline
+    SPRING_RABBITMQ_VIRTUAL_HOST: pipeline
+    SPRING_CLOUD_CONFIG_URI: http://config-server.steam-uat:8010/
     SPRING_CLOUD_CONFIG_ENABLED: true
-    SERVICES_GITLAB_URL: http://git.choerodon.com.cn
-    SERVICES_GITLAB_SSHURL: git@choerodon.com.cn
-    SERVICES_GITLAB_PASSWORD: abc123456
+    SERVICES_GITLAB_URL: http://gitlab.steamuat.crcloud.com
+    SERVICES_GITLAB_SSHURL: gitlab.steamuat.crcloud.com:2289
+    SERVICES_GITLAB_PASSWORD: steam123
     SERVICES_GITLAB_PROJECTLIMIT: 100
-    SERVICES_HELM_URL: helm.example.com
-    SERVICES_HARBOR_BASEURL: https://registry.choerodon.com.cn
-    SERVICES_HARBOR_USERNAME:  admin
-    SERVICES_HARBOR_PASSWORD:
+    SERVICES_HELM_URL: chart.steamuat.crcloud.com
+    SERVICES_HARBOR_BASEURL: http://registry.steamuat.crcloud.com
+    SERVICES_HARBOR_USERNAME: admin
+    SERVICES_HARBOR_PASSWORD: Devops123
     # harbor insecure skip tls verify, the default is false
     SERVICES_HARBOR_INSECURESKIPTLSVERIFY: false
     SERVICES_SONARQUBE_URL:
-    SERVICES_GATEWAY_URL: http://api.example.com
-    AGENT_VERSION: 0.5.0.RELEASE
+    SERVICES_GATEWAY_URL: http://api.steamuat.crcloud.com
+    AGENT_VERSION: 0.15.1
     SECURITY_BASIC_ENABLE: false
     SECURITY_IGNORED: /ci,/webhook,/v2/api-docs,/agent/**,/ws/**,/webhook/**
-    AGENT_SERVICEURL: ws://devops-service.choerodon.com.cn/agent/
+    AGENT_SERVICEURL: ws://devops.steamuat.crcloud.com/agent/
     AGENT_REPOURL: https://openchart.choerodon.com.cn/choerodon/c7n/
     AGENT_CERTMANAGERURL: https://openchart.choerodon.com.cn/choerodon/infra/
     CERT_TESTCERT: false
-    TEMPLATE_VERSION: 0.13.0
+    TEMPLATE_VERSION: 0.15.0
     TEMPLATE_URL: https://github.com/choerodon/choerodon-devops-templates.git
 #    SKYWALKING_OPTS: >-
 #          -javaagent:/agent/skywalking-agent.jar
@@ -72,7 +78,7 @@ logs:
 
 persistence:
   enabled: true
-  existingClaim:
+  existingClaim: chartmuseum-pvc
   subPath:
   ## A manually managed Persistent Volume and Claim
   ## Requires persistence.enabled: true
@@ -82,7 +88,7 @@ persistence:
 
 service:
   name: devops-service
-  enable: false
+  enable: true
   type: ClusterIP
   port: 8060
 
@@ -99,5 +105,5 @@ resources:
     memory: 2Gi
 
 ingress:
-  enable: false
-  host: devops-service.choerodon.com.cn
+  enable: true
+  host: devops.steamuat.crcloud.com

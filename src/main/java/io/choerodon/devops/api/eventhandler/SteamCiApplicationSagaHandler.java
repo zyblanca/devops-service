@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import io.choerodon.asgard.saga.annotation.SagaTask;
 import io.choerodon.devops.api.dto.steamci.ApplicationPayload;
 import io.choerodon.devops.api.dto.steamci.PrivilegePayload;
-import io.choerodon.devops.app.service.steamci.SteamCiApplicationService;
+import io.choerodon.devops.app.service.steam.integration.SteamCiApplicationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

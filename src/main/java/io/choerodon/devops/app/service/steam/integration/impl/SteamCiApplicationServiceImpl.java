@@ -1,17 +1,15 @@
-package io.choerodon.devops.app.service.steamci.impl;
+package io.choerodon.devops.app.service.steam.integration.impl;
 
-import io.choerodon.core.convertor.ConvertHelper;
 import io.choerodon.core.exception.CommonException;
 import io.choerodon.devops.api.dto.steamci.ApplicationPayload;
 import io.choerodon.devops.api.dto.steamci.PrivilegePayload;
-import io.choerodon.devops.app.service.steamci.SteamCiApplicationService;
+import io.choerodon.devops.app.service.steam.integration.SteamCiApplicationService;
 import io.choerodon.devops.domain.application.entity.AppUserPermissionE;
 import io.choerodon.devops.domain.application.entity.ApplicationE;
 import io.choerodon.devops.domain.application.entity.iam.UserE;
 import io.choerodon.devops.domain.application.repository.AppUserPermissionRepository;
 import io.choerodon.devops.domain.application.repository.ApplicationRepository;
 import io.choerodon.devops.domain.application.repository.IamRepository;
-import io.choerodon.devops.infra.dataobject.ApplicationDO;
 import io.choerodon.devops.infra.mapper.ApplicationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
