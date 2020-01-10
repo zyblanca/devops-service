@@ -121,21 +121,19 @@ public class PushWebHookDTO {
 
     @Override
     public String toString() {
-        return "PushWebHookDTO{"
-                + "objectKind='" + objectKind + '\''
-                + ", eventName='" + eventName + '\''
-                + ", before='" + before + '\''
-                + ", after='" + after + '\''
-                + ", ref='" + ref + '\''
-                + ", checkoutSha='" + checkoutSha + '\''
-                + ", userId=" + userId
-                + ", projectId=" + projectId
-                + ", project =" + project.toString()
-                + ", commits=" + String.join(" , ",
-                commits.stream().map(t -> t.getId() + " : " + t.getMessage()).collect(Collectors.toList()))
-                + ", totalCommitsCount=" + totalCommitsCount
-                + ", token='" + token + '\''
-                + '}';
+        return "PushWebHookDTO{" +
+                "objectKind='" + objectKind + '\'' +
+                ", eventName='" + eventName + '\'' +
+                ", before='" + before + '\'' +
+                ", after='" + after + '\'' +
+                ", ref='" + ref + '\'' +
+                ", checkoutSha='" + checkoutSha + '\'' +
+                ", userId=" + userId +
+                ", projectId=" + projectId +
+                ", project=" + project +
+                ", commits=" + commits +
+                ", totalCommitsCount=" + totalCommitsCount +
+                ", token='" + token + '\'' +
+                '}';
     }
-
 }
