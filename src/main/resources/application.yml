@@ -104,4 +104,4 @@ logging:
 
 steam:
   rabbitmq:
-    enable: false
+    enable: true
