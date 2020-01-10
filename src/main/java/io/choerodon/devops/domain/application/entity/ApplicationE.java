@@ -275,4 +275,33 @@ public class ApplicationE {
     public DevopsProjectConfigE getChartConfigE() {
         return chartConfigE;
     }
+
+    @Override
+    public String toString() {
+        return "ApplicationE{" +
+                "id=" + id +
+                ", projectE=" + projectE +
+                ", name='" + name + '\'' +
+                ", code='" + code + '\'' +
+                ", gitlabProjectE=" + gitlabProjectE +
+                ", applicationTemplateE=" + applicationTemplateE +
+                ", harborConfigE=" + harborConfigE +
+                ", chartConfigE=" + chartConfigE +
+                ", isActive=" + isActive +
+                ", isSynchro=" + isSynchro +
+                ", groupName='" + groupName + '\'' +
+                ", uuid='" + uuid + '\'' +
+                ", token='" + token + '\'' +
+                ", publishLevel='" + publishLevel + '\'' +
+                ", contributor='" + contributor + '\'' +
+                ", description='" + description + '\'' +
+                ", lastUpdateDate=" + lastUpdateDate +
+                ", sonarUrl='" + sonarUrl + '\'' +
+                ", hookId=" + hookId +
+                ", isFailed=" + isFailed +
+                ", type='" + type + '\'' +
+                ", isSkipCheckPermission=" + isSkipCheckPermission +
+                ", objectVersionNumber=" + objectVersionNumber +
+                '}';
+    }
 }

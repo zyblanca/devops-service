@@ -528,11 +528,21 @@ public class ApplicationServiceImpl implements ApplicationService {
         ProjectE projectE = iamRepository.queryIamProject(gitlabProjectPayload.getIamProjectId());
         ApplicationE applicationE = applicationRepository.queryByCode(gitlabProjectPayload.getPath(), projectE.getId());
         Organization organization = iamRepository.queryOrganizationById(projectE.getOrganization().getId());
+
+        logger.info("organization:{}, project: {}, application: {},", organization.toString(), projectE.toString(), applicationE.toString());
+
         //构建gitaddress
         String gitAddress = (!gitlabUrl.endsWith("/") ? gitlabUrl + "/" : gitlabUrl) + organization.getCode() + "-" + projectE.getCode() + "/" + applicationE.getCode() + ".git";
+
+        logger.info("git address: {}", gitAddress);
+
         //判断是否已存在于devops-ci,存在则忽悠gitlab创建流程
         CIApplicationE ciApplicationE = devopsCIRepository.getApplicationByGitAddress(gitAddress);
+
         if (null != ciApplicationE && null != ciApplicationE.getId()) {
+
+            logger.info("ci application: {}", ciApplicationE);
+
             try {
                 int newGitProjectId = gitlabProjectPayload.getGitlabProjectId();
                 // 为项目下的成员分配对于此gitlab项目的权限
