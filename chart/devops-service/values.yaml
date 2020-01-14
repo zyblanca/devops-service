@@ -64,6 +64,7 @@ env:
     CERT_TESTCERT: false
     TEMPLATE_VERSION: 0.15.0
     TEMPLATE_URL: https://github.com/choerodon/choerodon-devops-templates.git
+    STEAM_RABBITMQ_ENABLE: true
 #    SKYWALKING_OPTS: >-
 #          -javaagent:/agent/skywalking-agent.jar
 #          -Dskywalking.agent.application_code=devops-service
