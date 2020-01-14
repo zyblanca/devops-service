@@ -33,27 +33,27 @@ public class SteamPipelineServiceImpl implements SteamPipelineService {
     private boolean isEnable;
 
     @Override
-    public void sendGitLabWebHook(PushWebHookDTO pushWebHookDTO)  {
-        PipelineMessage pipelineMessage=new PipelineMessage();
+    public void sendGitLabWebHook(PushWebHookDTO pushWebHookDTO) {
+        PipelineMessage pipelineMessage = new PipelineMessage();
         pipelineMessage.setData(pushWebHookDTO);
         pipelineMessage.setType(PipelineMessageType.GIT_LAB.getBizCode());
         try {
             sendMsg(pipelineMessage);
         } catch (UnsupportedEncodingException e) {
-            log.error("发送给流水线pipeline MQ 消息报错",e);
+            log.error("发送给流水线pipeline MQ 消息报错", e);
         }
     }
 
     public void sendMsg(PipelineMessage pipelineMessage, String queue, Long timeOut) throws UnsupportedEncodingException {
-        log.debug("流水线mq 发送开关是否开启:{}", isEnable);
-        if ( isEnable) {
+        log.info("流水线mq 发送开关是否开启:{}", isEnable);
+        if (isEnable) {
             CorrelationData correlationData = new CorrelationData();
             correlationData.setId(pipelineMessage.getType() + new SnowflakeIdWorker(0, 0).nextId());
             MessageProperties messageProperties = new MessageProperties();
             messageProperties.setContentType("application/json");
             messageProperties.setContentEncoding("UTF-8");
             messageProperties.setExpiration(String.valueOf(timeOut));
-            log.info("发送给流水线的mq类型是:{},消息内容:{}", pipelineMessage.getType(),pipelineMessage.getData());
+            log.info("发送给流水线的mq类型是:{},消息内容:{}", pipelineMessage.getType(), pipelineMessage.getData());
             Message rabbitMessage = new Message(JSON.toJSONString(pipelineMessage).getBytes("utf-8"), messageProperties);
             rabbitTemplate.convertAndSend(RabbitConfig.PIPELINE_DEFAULT_EXCHANGE, queue, rabbitMessage, correlationData);
         }
