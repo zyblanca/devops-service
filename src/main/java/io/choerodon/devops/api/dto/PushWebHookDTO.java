@@ -1,7 +1,6 @@
 package io.choerodon.devops.api.dto;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Creator: Runge
@@ -17,6 +16,8 @@ public class PushWebHookDTO {
     private String ref;
     private String checkoutSha;
     private Integer userId;
+    private String userName;
+    private String userUsername;
     private Integer projectId;
     private ProjectWebHookDto project;
     private List<CommitDTO> commits;
@@ -119,6 +120,22 @@ public class PushWebHookDTO {
         this.token = token;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserUsername() {
+        return userUsername;
+    }
+
+    public void setUserUsername(String userUsername) {
+        this.userUsername = userUsername;
+    }
+
     @Override
     public String toString() {
         return "PushWebHookDTO{" +
@@ -129,6 +146,8 @@ public class PushWebHookDTO {
                 ", ref='" + ref + '\'' +
                 ", checkoutSha='" + checkoutSha + '\'' +
                 ", userId=" + userId +
+                ", userName='" + userName + '\'' +
+                ", userUsername='" + userUsername + '\'' +
                 ", projectId=" + projectId +
                 ", project=" + project +
                 ", commits=" + commits +
