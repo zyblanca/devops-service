@@ -114,4 +114,21 @@ public class CIApplicationE {
     public void setUnitSize(Integer unitSize) {
         this.unitSize = unitSize;
     }
+
+    @Override
+    public String toString() {
+        return "CIApplicationE{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", groupId=" + groupId +
+                ", gitAddress='" + gitAddress + '\'' +
+                ", gitSSHAddress='" + gitSSHAddress + '\'' +
+                ", code='" + code + '\'' +
+                ", gitProjectId=" + gitProjectId +
+                ", status=" + status +
+                ", token='" + token + '\'' +
+                ", dataUnit='" + dataUnit + '\'' +
+                ", unitSize=" + unitSize +
+                '}';
+    }
 }

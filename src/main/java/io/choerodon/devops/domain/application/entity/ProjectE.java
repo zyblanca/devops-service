@@ -68,4 +68,15 @@ public class ProjectE {
     public void initOrganization(Long id) {
         this.organization = new Organization(id);
     }
+
+    @Override
+    public String toString() {
+        return "ProjectE{" +
+                "id=" + id +
+                ", organization=" + organization +
+                ", name='" + name + '\'' +
+                ", code='" + code + '\'' +
+                ", gitlabGroupE=" + gitlabGroupE +
+                '}';
+    }
 }

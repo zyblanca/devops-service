@@ -99,9 +99,9 @@ cert:
   testCert: false # 证书是否为测试证书
 logging:
   level:
-    io.choerodon.event.consumer: debug
-  config: classpath:logback-spring.xml
+    io.choerodon: info
+#  config: classpath:logback-spring.xml
 
 steam:
   rabbitmq:
-    enable: false
+    enable: true
