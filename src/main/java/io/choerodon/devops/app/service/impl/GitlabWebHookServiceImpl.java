@@ -58,10 +58,14 @@ public class GitlabWebHookServiceImpl implements GitlabWebHookService {
                 if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(pushWebHookDTO.toString());
                 }
-                pipelineService.sendGitLabWebHook(pushWebHookDTO);
+                new Thread(() -> {
+                    pipelineService.sendGitLabWebHook(pushWebHookDTO);
+                }).start();
                 devopsGitService.branchSync(pushWebHookDTO, token);
                 devopsGitlabCommitService.create(pushWebHookDTO, token);
-                devOpsCIService.getRepositorySize(pushWebHookDTO.getProject());
+                new Thread(() -> {
+                    devOpsCIService.getRepositorySize(pushWebHookDTO.getProject());
+                }).start();
                 break;
             case "pipeline":
                 PipelineWebHookDTO pipelineWebHookDTO = JSONArray.parseObject(body, PipelineWebHookDTO.class, FastjsonParserConfigProvider.getParserConfig());
